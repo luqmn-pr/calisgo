@@ -35,10 +35,7 @@ class BerhitungScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     // Left: Visual objects
-                    Expanded(
-                      flex: 5,
-                      child: _ObjectsPanel(state: state),
-                    ),
+                    Expanded(flex: 5, child: _ObjectsPanel(state: state)),
                     // Right: Answer panel
                     Expanded(
                       flex: 4,
@@ -85,17 +82,20 @@ class _TopBar extends StatelessWidget {
                 color: Colors.white.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.arrow_back_ios_new,
-                  color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
           const SizedBox(width: 16),
           Text(
             '🔢 Berhitung',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
           ),
           const SizedBox(width: 24),
           // Progress bar
@@ -105,8 +105,7 @@ class _TopBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: state.progress,
                 backgroundColor: Colors.white.withOpacity(0.3),
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 minHeight: 10,
               ),
             ),
@@ -123,8 +122,7 @@ class _TopBar extends StatelessWidget {
           const SizedBox(width: 24),
           // Score
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -166,27 +164,30 @@ class _ObjectsPanel extends StatelessWidget {
         children: [
           // Question text
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.berhitungColor.withOpacity(0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
                 ),
-              ],
-            ),
-            child: Text(
-              soal.pertanyaan,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.berhitungColor.withOpacity(0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  soal.pertanyaan,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: AppColors.berhitungColor,
                     fontWeight: FontWeight.w900,
                   ),
-              textAlign: TextAlign.center,
-            ),
-          )
+                  textAlign: TextAlign.center,
+                ),
+              )
               .animate(key: ValueKey(state.currentIndex))
               .fadeIn()
               .slideY(begin: -0.2, end: 0),
@@ -219,10 +220,14 @@ class _CountingObjects extends StatelessWidget {
         soal.angkaA,
         (i) => Text(soal.item.emoji, style: const TextStyle(fontSize: 52))
             .animate(
-                delay: Duration(milliseconds: 50 * i),
-                key: ValueKey('${state.currentIndex}_$i'))
-            .scale(begin: const Offset(0, 0), end: const Offset(1, 1),
-                curve: Curves.elasticOut),
+              delay: Duration(milliseconds: 50 * i),
+              key: ValueKey('${state.currentIndex}_$i'),
+            )
+            .scale(
+              begin: const Offset(0, 0),
+              end: const Offset(1, 1),
+              curve: Curves.elasticOut,
+            ),
       ),
     );
   }
@@ -235,8 +240,7 @@ class _OperationObjects extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final operator =
-        soal.type == SoalType.penjumlahan ? '+' : '-';
+    final operator = soal.type == SoalType.penjumlahan ? '+' : '-';
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -250,8 +254,8 @@ class _OperationObjects extends StatelessWidget {
               runSpacing: 8,
               children: List.generate(
                 soal.angkaA,
-                (i) => Text(soal.item.emoji,
-                    style: const TextStyle(fontSize: 44)),
+                (i) =>
+                    Text(soal.item.emoji, style: const TextStyle(fontSize: 44)),
               ),
             ),
             const SizedBox(height: 8),
@@ -265,9 +269,9 @@ class _OperationObjects extends StatelessWidget {
           child: Text(
             operator,
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  color: AppColors.berhitungColor,
-                  fontWeight: FontWeight.w900,
-                ),
+              color: AppColors.berhitungColor,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
 
@@ -343,107 +347,115 @@ class _AnswerPanel extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Jawabannya adalah...',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.textMedium,
-                ),
-          ),
-          const SizedBox(height: 20),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Jawabannya adalah...',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(color: AppColors.textMedium),
+            ),
+            const SizedBox(height: 20),
 
-          // MCQ Grid
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 2.2,
-            children: choices.map((choice) {
-              Color btnColor;
-              if (!isAnswered) {
-                btnColor = AppColors.berhitungColor;
-              } else if (choice == state.currentSoal.jawaban) {
-                btnColor = AppColors.correct;
-              } else if (choice == state.selectedAnswer) {
-                btnColor = AppColors.incorrect;
-              } else {
-                btnColor = Colors.grey.shade300;
-              }
+            // MCQ Grid
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 2.2,
+              children: choices.map((choice) {
+                Color btnColor;
+                if (!isAnswered) {
+                  btnColor = AppColors.berhitungColor;
+                } else if (choice == state.currentSoal.jawaban) {
+                  btnColor = AppColors.correct;
+                } else if (choice == state.selectedAnswer) {
+                  btnColor = AppColors.incorrect;
+                } else {
+                  btnColor = Colors.grey.shade300;
+                }
 
-              return GestureDetector(
-                onTap: isAnswered
-                    ? null
-                    : () => ref
-                        .read(berhitungProvider.notifier)
-                        .selectAnswer(choice),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  decoration: BoxDecoration(
-                    color: btnColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: isAnswered
-                        ? []
-                        : [
-                            BoxShadow(
-                              color: AppColors.berhitungColor.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$choice',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: isAnswered && choice != state.currentSoal.jawaban
-                            ? Colors.grey.shade500
-                            : Colors.white,
+                return GestureDetector(
+                  onTap: isAnswered
+                      ? null
+                      : () => ref
+                            .read(berhitungProvider.notifier)
+                            .selectAnswer(choice),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    decoration: BoxDecoration(
+                      color: btnColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: isAnswered
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: AppColors.berhitungColor.withOpacity(
+                                  0.3,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$choice',
+                        style: TextStyle(
+                          color: isAnswered && btnColor == Colors.grey.shade300
+                              ? Colors.grey.shade500
+                              : Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 32,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Feedback + Next
-          if (isAnswered)
-            Column(
-              children: [
-                Text(
-                  state.phase == BerhitungPhase.correct
-                      ? '🎉 Benar! +10 poin'
-                      : '😅 Jawaban: ${state.currentSoal.jawaban}',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: state.phase == BerhitungPhase.correct
-                            ? AppColors.correct
-                            : AppColors.incorrect,
-                        fontWeight: FontWeight.w900,
-                      ),
-                ).animate().fadeIn().scale(),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () =>
-                      ref.read(berhitungProvider.notifier).nextSoal(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.berhitungColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 14),
-                  ),
-                  child: const Text('Soal Berikutnya →',
-                      style: TextStyle(fontWeight: FontWeight.w800)),
-                ),
-              ],
+                );
+              }).toList(),
             ),
-        ],
+
+            const SizedBox(height: 20),
+
+            if (isAnswered)
+              Column(
+                children: [
+                  Text(
+                    state.phase == BerhitungPhase.correct
+                        ? '🎉 Benar! +10 poin'
+                        : '😅 Jawaban: ${state.currentSoal.jawaban}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: state.phase == BerhitungPhase.correct
+                          ? AppColors.correct
+                          : AppColors.incorrect,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ).animate().fadeIn().scale(),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () =>
+                        ref.read(berhitungProvider.notifier).nextSoal(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.berhitungColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: const Text(
+                      'Soal Berikutnya →',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -457,8 +469,7 @@ class _FinishedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pct =
-        (state.correctCount / state.soalList.length * 100).round();
+    final pct = (state.correctCount / state.soalList.length * 100).round();
 
     return Scaffold(
       body: Container(
@@ -473,30 +484,31 @@ class _FinishedView extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('🏆', style: TextStyle(fontSize: 80))
-                  .animate()
-                  .scale(curve: Curves.elasticOut),
+              const Text(
+                '🏆',
+                style: TextStyle(fontSize: 80),
+              ).animate().scale(curve: Curves.elasticOut),
               const SizedBox(height: 16),
               Text(
                 'Selesai!',
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: AppColors.berhitungColor,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  color: AppColors.berhitungColor,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
                 '${state.correctCount}/${state.soalList.length} benar ($pct%)',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textMedium,
-                    ),
+                  color: AppColors.textMedium,
+                ),
               ),
               Text(
                 'Skor: ${state.score} poin ⭐',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.berhitungColor,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  color: AppColors.berhitungColor,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
               const SizedBox(height: 32),
               Row(

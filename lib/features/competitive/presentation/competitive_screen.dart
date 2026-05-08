@@ -11,8 +11,7 @@ class CompetitiveScreen extends ConsumerStatefulWidget {
   const CompetitiveScreen({super.key});
 
   @override
-  ConsumerState<CompetitiveScreen> createState() =>
-      _CompetitiveScreenState();
+  ConsumerState<CompetitiveScreen> createState() => _CompetitiveScreenState();
 }
 
 class _CompetitiveScreenState extends ConsumerState<CompetitiveScreen> {
@@ -154,10 +153,7 @@ class _TeamPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            teamColor.withOpacity(0.15),
-            teamColor.withOpacity(0.05),
-          ],
+          colors: [teamColor.withOpacity(0.15), teamColor.withOpacity(0.05)],
         ),
       ),
       child: Column(
@@ -176,81 +172,92 @@ class _TeamPanel extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(soal.emoji, style: const TextStyle(fontSize: 60))
-                      .animate(key: ValueKey('${team.id}_${team.correctCount + team.incorrectCount}'))
-                      .scale(begin: const Offset(0, 0), curve: Curves.elasticOut),
-
-                  const SizedBox(height: 16),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: teamColor.withOpacity(0.25),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(soal.emoji, style: const TextStyle(fontSize: 60))
+                        .animate(
+                          key: ValueKey(
+                            '${team.id}_${team.correctCount + team.incorrectCount}',
+                          ),
+                        )
+                        .scale(
+                          begin: const Offset(0, 0),
+                          curve: Curves.elasticOut,
                         ),
-                      ],
-                    ),
-                    child: Text(
-                      soal.question,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: teamColor,
+
+                    const SizedBox(height: 16),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: teamColor.withOpacity(0.25),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        soal.question,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: teamColor,
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // Answer choices
-                  GridView.count(
-                    crossAxisCount: 2,
-                    shrinkWrap: true,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 2.5,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: soal.choices.map((choice) {
-                      return GestureDetector(
-                        onTap: phase != GamePhase.playing
-                            ? null
-                            : () => onAnswer(choice),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: teamColor,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: teamColor.withOpacity(0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$choice',
-                              style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
+                    // Answer choices
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 2.5,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: soal.choices.map((choice) {
+                        return GestureDetector(
+                          onTap: phase != GamePhase.playing
+                              ? null
+                              : () => onAnswer(choice),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: teamColor,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: teamColor.withOpacity(0.35),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                '$choice',
+                                style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -308,8 +315,7 @@ class _TeamHeader extends StatelessWidget {
 class _FeedbackBanner extends StatelessWidget {
   final String message;
   final bool isCorrect;
-  const _FeedbackBanner(
-      {required this.message, required this.isCorrect});
+  const _FeedbackBanner({required this.message, required this.isCorrect});
 
   @override
   Widget build(BuildContext context) {
@@ -317,8 +323,9 @@ class _FeedbackBanner extends StatelessWidget {
       duration: const Duration(milliseconds: 250),
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      color: (isCorrect ? AppColors.correct : AppColors.incorrect)
-          .withOpacity(0.2),
+      color: (isCorrect ? AppColors.correct : AppColors.incorrect).withOpacity(
+        0.2,
+      ),
       child: Center(
         child: Text(
           message,
@@ -348,21 +355,20 @@ class _CenterDivider extends StatelessWidget {
       decoration: BoxDecoration(
         color: isUrgent ? AppColors.incorrect : AppColors.textDark,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 12,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 12),
         ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('VS',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-              )),
+          const Text(
+            'VS',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
           const SizedBox(height: 12),
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -413,18 +419,19 @@ class _CountdownOverlay extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              value > 0 ? '$value' : 'MULAI!',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 120,
-                fontWeight: FontWeight.w900,
-              ),
-            )
+                  value > 0 ? '$value' : 'MULAI!',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 120,
+                    fontWeight: FontWeight.w900,
+                  ),
+                )
                 .animate(key: ValueKey(value))
                 .scale(
-                    begin: const Offset(1.5, 1.5),
-                    end: const Offset(1.0, 1.0),
-                    curve: Curves.easeOut)
+                  begin: const Offset(1.5, 1.5),
+                  end: const Offset(1.0, 1.0),
+                  curve: Curves.easeOut,
+                )
                 .fadeIn(),
             const SizedBox(height: 16),
             const Text(
@@ -463,25 +470,26 @@ class _FinishedOverlay extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 40,
-              ),
+              BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 40),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                isDraw ? '🤝 Seri!' : (winner == TeamId.blue ? '🔵 Tim Biru Menang!' : '🔴 Tim Merah Menang!'),
+                isDraw
+                    ? '🤝 Seri!'
+                    : (winner == TeamId.blue
+                          ? '🔵 Tim Biru Menang!'
+                          : '🔴 Tim Merah Menang!'),
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
                   color: isDraw
                       ? AppColors.textDark
                       : (winner == TeamId.blue
-                          ? AppColors.teamBlue
-                          : AppColors.teamRed),
+                            ? AppColors.teamBlue
+                            : AppColors.teamRed),
                 ),
                 textAlign: TextAlign.center,
               ).animate().scale(curve: Curves.elasticOut),
@@ -559,15 +567,11 @@ class _ScoreCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color,
-          width: isWinner ? 3 : 1,
-        ),
+        border: Border.all(color: color, width: isWinner ? 3 : 1),
       ),
       child: Column(
         children: [
-          if (isWinner)
-            const Text('🏆', style: TextStyle(fontSize: 32)),
+          if (isWinner) const Text('🏆', style: TextStyle(fontSize: 32)),
           Text(
             label,
             style: TextStyle(
