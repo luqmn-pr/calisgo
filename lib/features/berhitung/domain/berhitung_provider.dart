@@ -39,12 +39,14 @@ class BerhitungState {
       );
 
   BerhitungSoal get currentSoal => soalList[currentIndex];
-  bool get isFinished => currentIndex >= soalList.length;
+  // isFinished: currentIndex sudah melewati batas list
+  bool get isFinished => soalList.isEmpty || currentIndex >= soalList.length;
   double get progress =>
-      soalList.isEmpty ? 0 : (currentIndex / soalList.length);
+      soalList.isEmpty ? 0 : (currentIndex / soalList.length).clamp(0.0, 1.0);
 
-  /// Generate pilihan jawaban (MCQ): jawaban benar + 3 distraktor
+  /// answerChoices hanya valid jika !isFinished
   List<int> get answerChoices {
+    if (isFinished) return [];
     final correct = currentSoal.jawaban;
     final Set<int> choices = {correct};
     int attempt = 0;

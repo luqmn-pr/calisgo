@@ -81,11 +81,17 @@ class MembacaNotifier extends StateNotifier<MembacaState> {
   }
 
   // Suku kata drag-and-drop logic
+  // Menggunakan hitungan kemunculan (count-based) agar support suku kata duplikat
+  // misal MAMA = ['MA','MA'] — kedua slot harus bisa diisi secara independen
   void pickSukuKata(String suku) {
-    if (state.arrangedSukuKata.contains(suku)) return;
-    final arranged = [...state.arrangedSukuKata, suku];
     final kata = MembacaData.kataLatihan[state.currentIndex];
+    // Hitung berapa kali suku ini muncul di sumber dan di arranged
+    final totalInSource = kata.sukuKata.where((s) => s == suku).length;
+    final usedCount = state.arrangedSukuKata.where((s) => s == suku).length;
+    // Jika sudah semua terpakai, tolak
+    if (usedCount >= totalInSource) return;
 
+    final arranged = [...state.arrangedSukuKata, suku];
     bool correct = false;
     if (arranged.length == kata.sukuKata.length) {
       correct = arranged.join('') == kata.kata;
@@ -99,7 +105,10 @@ class MembacaNotifier extends StateNotifier<MembacaState> {
   }
 
   void removeSukuKata(String suku) {
-    final arranged = List<String>.from(state.arrangedSukuKata)..remove(suku);
+    // Hapus hanya SATU kemunculan terakhir dari suku ini
+    final arranged = List<String>.from(state.arrangedSukuKata);
+    final lastIdx = arranged.lastIndexOf(suku);
+    if (lastIdx != -1) arranged.removeAt(lastIdx);
     state = state.copyWith(arrangedSukuKata: arranged, isCorrect: false);
   }
 

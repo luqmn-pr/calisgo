@@ -94,82 +94,93 @@ class _ControlsPanel extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          // Back button
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    // Back button
+                    GestureDetector(
+                      onTap: () => context.pop(),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.arrow_back_ios_new,
+                            color: Colors.white, size: 18),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    Text(
+                      '✏️\nMenulis',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Score
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text('⭐', style: TextStyle(fontSize: 24)),
+                          Text(
+                            '${state.score}',
+                            style: TextStyle(
+                              color: AppColors.menulisColor,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 24,
+                            ),
+                          ),
+                          Text(
+                            'Poin',
+                            style: TextStyle(
+                              color: AppColors.textMedium,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // Action buttons
+                    _ActionBtn(
+                      icon: Icons.refresh,
+                      label: 'Ulangi',
+                      onTap: () => ref.read(menulisProvider.notifier).reset(),
+                    ),
+                    const SizedBox(height: 8),
+                    _ActionBtn(
+                      icon: Icons.skip_next,
+                      label: 'Lewati',
+                      onTap: () => ref.read(menulisProvider.notifier).nextLetter(),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
-              child: const Icon(Icons.arrow_back_ios_new,
-                  color: Colors.white, size: 18),
             ),
-          ),
-          const SizedBox(height: 16),
-
-          Text(
-            '✏️\nMenulis',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Score
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                const Text('⭐', style: TextStyle(fontSize: 24)),
-                Text(
-                  '${state.score}',
-                  style: TextStyle(
-                    color: AppColors.menulisColor,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 24,
-                  ),
-                ),
-                Text(
-                  'Poin',
-                  style: TextStyle(
-                    color: AppColors.textMedium,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const Spacer(),
-
-          // Action buttons
-          _ActionBtn(
-            icon: Icons.refresh,
-            label: 'Ulangi',
-            onTap: () => ref.read(menulisProvider.notifier).reset(),
-          ),
-          const SizedBox(height: 8),
-          _ActionBtn(
-            icon: Icons.skip_next,
-            label: 'Lewati',
-            onTap: () => ref.read(menulisProvider.notifier).nextLetter(),
-          ),
-          const SizedBox(height: 20),
-        ],
+          );
+        },
       ),
     );
   }

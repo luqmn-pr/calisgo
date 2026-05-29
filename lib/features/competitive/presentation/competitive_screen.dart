@@ -171,12 +171,12 @@ class _TeamPanel extends StatelessWidget {
           // Question
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(8),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(soal.emoji, style: const TextStyle(fontSize: 60))
+                    Text(soal.emoji, style: const TextStyle(fontSize: 40))
                         .animate(
                           key: ValueKey(
                             '${team.id}_${team.correctCount + team.incorrectCount}',
@@ -187,43 +187,43 @@ class _TeamPanel extends StatelessWidget {
                           curve: Curves.elasticOut,
                         ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
+                        horizontal: 16,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
                             color: teamColor.withOpacity(0.25),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Text(
                         soal.question,
                         style: TextStyle(
-                          fontSize: 32,
+                          fontSize: 24,
                           fontWeight: FontWeight.w900,
                           color: teamColor,
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
 
                     // Answer choices
                     GridView.count(
                       crossAxisCount: 2,
                       shrinkWrap: true,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 2.5,
+                      mainAxisSpacing: 6,
+                      crossAxisSpacing: 6,
+                      childAspectRatio: 3.2,
                       physics: const NeverScrollableScrollPhysics(),
                       children: soal.choices.map((choice) {
                         return GestureDetector(
@@ -233,12 +233,12 @@ class _TeamPanel extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               color: teamColor,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
                                   color: teamColor.withOpacity(0.35),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
                                 ),
                               ],
                             ),
@@ -246,7 +246,7 @@ class _TeamPanel extends StatelessWidget {
                               child: Text(
                                 '$choice',
                                 style: const TextStyle(
-                                  fontSize: 26,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   color: Colors.white,
                                 ),
@@ -322,7 +322,7 @@ class _FeedbackBanner extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       color: (isCorrect ? AppColors.correct : AppColors.incorrect).withOpacity(
         0.2,
       ),
@@ -332,7 +332,7 @@ class _FeedbackBanner extends StatelessWidget {
           style: TextStyle(
             color: isCorrect ? AppColors.correct : AppColors.incorrect,
             fontWeight: FontWeight.w900,
-            fontSize: 16,
+            fontSize: 14,
           ),
         ),
       ),
@@ -463,62 +463,63 @@ class _FinishedOverlay extends StatelessWidget {
     return Container(
       color: Colors.black.withOpacity(0.82),
       child: Center(
-        child: Container(
-          width: 500,
-          padding: const EdgeInsets.all(40),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 40),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                isDraw
-                    ? '🤝 Seri!'
-                    : (winner == TeamId.blue
-                          ? '🔵 Tim Biru Menang!'
-                          : '🔴 Tim Merah Menang!'),
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: isDraw
-                      ? AppColors.textDark
+        child: SingleChildScrollView(
+          child: Container(
+            width: 420,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 40),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isDraw
+                      ? '🤝 Seri!'
                       : (winner == TeamId.blue
-                            ? AppColors.teamBlue
-                            : AppColors.teamRed),
+                            ? '🔵 Tim Biru Menang!'
+                            : '🔴 Tim Merah Menang!'),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: isDraw
+                        ? AppColors.textDark
+                        : (winner == TeamId.blue
+                              ? AppColors.teamBlue
+                              : AppColors.teamRed),
+                  ),
+                  textAlign: TextAlign.center,
+                ).animate().scale(curve: Curves.elasticOut),
+
+                const SizedBox(height: 16),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _ScoreCard(
+                      label: '🔵 Tim Biru',
+                      score: state.blueTeam.score,
+                      color: AppColors.teamBlue,
+                      isWinner: winner == TeamId.blue,
+                    ),
+                    _ScoreCard(
+                      label: '🔴 Tim Merah',
+                      score: state.redTeam.score,
+                      color: AppColors.teamRed,
+                      isWinner: winner == TeamId.red,
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
-              ).animate().scale(curve: Curves.elasticOut),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _ScoreCard(
-                    label: '🔵 Tim Biru',
-                    score: state.blueTeam.score,
-                    color: AppColors.teamBlue,
-                    isWinner: winner == TeamId.blue,
-                  ),
-                  _ScoreCard(
-                    label: '🔴 Tim Merah',
-                    score: state.redTeam.score,
-                    color: AppColors.teamRed,
-                    isWinner: winner == TeamId.red,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                   ElevatedButton(
                     onPressed: () {
                       ref.read(competitiveProvider.notifier).restart();
@@ -539,8 +540,10 @@ class _FinishedOverlay extends StatelessWidget {
                     child: const Text('Menu 🏠'),
                   ),
                 ],
+  
               ),
-            ],
+              ]
+            ),
           ),
         ),
       ),
@@ -563,30 +566,30 @@ class _ScoreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color, width: isWinner ? 3 : 1),
       ),
       child: Column(
         children: [
-          if (isWinner) const Text('🏆', style: TextStyle(fontSize: 32)),
+          if (isWinner) const Text('🏆', style: TextStyle(fontSize: 24)),
           Text(
             label,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w800,
-              fontSize: 16,
+              fontSize: 14,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             '$score poin',
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w900,
-              fontSize: 28,
+              fontSize: 20,
             ),
           ),
         ],
