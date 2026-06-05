@@ -648,28 +648,60 @@ class _CenterDivider extends StatelessWidget {
   });
 
   String _phaseIcon(GamePhase p) => switch (p) {
-    GamePhase.membaca => '📖',
-    GamePhase.menulis => '✏️',
-    GamePhase.berhitung => '🔢',
-    GamePhase.finished => '🏆',
-    _ => '🎮',
-  };
+        GamePhase.membaca => '📖',
+        GamePhase.menulis => '✏️',
+        GamePhase.berhitung => '🔢',
+        GamePhase.finished => '🏆',
+        _ => '🎮',
+      };
 
   @override
   Widget build(BuildContext context) {
-    final isUrgent =
-        state.timeLeft <= 10 &&
-        state.phase != GamePhase.countdown &&
-        state.phase != GamePhase.finished;
     final fs = (dividerW * 0.25).clamp(8.0, 14.0);
     final timerFs = (dividerW * 0.38).clamp(14.0, 22.0);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+    Widget buildTimer(int timeLeft, bool isFinished) {
+      final isUrgent = timeLeft <= 10 && !isFinished && state.phase != GamePhase.countdown;
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: EdgeInsets.symmetric(
+          horizontal: dividerW * 0.12,
+          vertical: sh * 0.01,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: isUrgent ? 0.25 : 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: isUrgent ? Border.all(color: Colors.red.shade400, width: 2) : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                color: isUrgent ? Colors.red.shade300 : Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: isUrgent ? timerFs * 1.1 : timerFs,
+              ),
+              child: Text(isFinished ? '-' : '$timeLeft'),
+            ),
+            Text(
+              'detik',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: fs * 0.65,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
       width: dividerW,
       height: sh,
       decoration: BoxDecoration(
-        color: isUrgent ? const Color(0xFFC62828) : const Color(0xFF1A1A2E),
+        color: const Color(0xFF1A1A2E),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.35),
@@ -680,11 +712,15 @@ class _CenterDivider extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // BLUE TEAM SIDE
           Text(
             _phaseIcon(state.blueTeam.activePhase),
             style: TextStyle(fontSize: fs * 1.3),
           ),
           SizedBox(height: sh * 0.01),
+          buildTimer(state.blueTeam.timeLeft, state.blueTeam.activePhase == GamePhase.finished),
+          
+          SizedBox(height: sh * 0.02),
           const Text(
             'VS',
             style: TextStyle(
@@ -693,53 +729,22 @@ class _CenterDivider extends StatelessWidget {
               fontSize: 11,
             ),
           ),
-          SizedBox(height: sh * 0.01),
-          Text(
-            _phaseIcon(state.redTeam.activePhase),
-            style: TextStyle(fontSize: fs * 1.3),
-          ),
-          SizedBox(height: sh * 0.025),
+          SizedBox(height: sh * 0.02),
 
-          // Timer
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            padding: EdgeInsets.symmetric(
-              horizontal: dividerW * 0.12,
-              vertical: sh * 0.01,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: isUrgent ? 0.25 : 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
+          // RED TEAM SIDE (Rotated)
+          Transform.rotate(
+            angle: math.pi,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: isUrgent ? timerFs * 1.1 : timerFs,
-                  ),
-                  child: Text('${state.timeLeft}'),
-                ),
+                buildTimer(state.redTeam.timeLeft, state.redTeam.activePhase == GamePhase.finished),
+                SizedBox(height: sh * 0.01),
                 Text(
-                  'detik',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: fs * 0.65,
-                  ),
+                  _phaseIcon(state.redTeam.activePhase),
+                  style: TextStyle(fontSize: fs * 1.3),
                 ),
               ],
             ),
-          ),
-
-          SizedBox(height: sh * 0.02),
-
-          // Phase progress dots
-          _PhaseDots(
-            bluePhase: state.blueTeam.activePhase,
-            redPhase: state.redTeam.activePhase,
-            dotSize: dividerW * 0.18,
           ),
         ],
       ),
@@ -747,49 +752,6 @@ class _CenterDivider extends StatelessWidget {
   }
 }
 
-class _PhaseDots extends StatelessWidget {
-  final GamePhase bluePhase, redPhase;
-  final double dotSize;
-
-  const _PhaseDots({
-    required this.bluePhase,
-    required this.redPhase,
-    required this.dotSize,
-  });
-
-  int _order(GamePhase p) => switch (p) {
-    GamePhase.membaca => 1,
-    GamePhase.menulis => 2,
-    GamePhase.berhitung => 3,
-    GamePhase.finished => 4,
-    _ => 0,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final phases = [GamePhase.membaca, GamePhase.menulis, GamePhase.berhitung];
-    return Column(
-      children: phases.map((p) {
-        final bDone = _order(bluePhase) > _order(p);
-        final rDone = _order(redPhase) > _order(p);
-        final active =
-            _order(bluePhase) == _order(p) || _order(redPhase) == _order(p);
-        final color = (bDone && rDone)
-            ? Colors.white
-            : active
-            ? Colors.white.withValues(alpha: 0.7)
-            : Colors.white.withValues(alpha: 0.2);
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: EdgeInsets.symmetric(vertical: dotSize * 0.2),
-          width: dotSize,
-          height: dotSize,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-        );
-      }).toList(),
-    );
-  }
-}
 
 // ─── Countdown Overlay ────────────────────────────────────────
 class _CountdownOverlay extends StatelessWidget {

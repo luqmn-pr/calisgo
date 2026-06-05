@@ -6,7 +6,6 @@ enum TeamId { blue, red }
 
 /// Fase permainan — countdown, 3 fase aktif, dan selesai.
 /// Setiap tim bisa berada di fase yang berbeda (salah satu bisa maju lebih cepat).
-/// `state.phase` = fase global yang sedang di-timer.
 enum GamePhase { countdown, membaca, menulis, berhitung, finished }
 
 // ─── Per-Team State ───────────────────────────────────────────
@@ -14,11 +13,14 @@ class TeamState {
   final TeamId id;
   final int totalScore;
 
-  /// Fase aktif tim saat ini — bisa berbeda dengan global phase
+  /// Fase aktif tim saat ini
   final GamePhase activePhase;
 
   /// Soal ke-berapa di dalam [activePhase] (0-indexed, max 4)
   final int questionIndex;
+
+  /// Sisa waktu per fase (60 detik)
+  final int timeLeft;
 
   // Statistik per fase (untuk tabel hasil)
   final int membacaCorrect;
@@ -33,6 +35,7 @@ class TeamState {
     this.totalScore = 0,
     this.activePhase = GamePhase.membaca,
     this.questionIndex = 0,
+    this.timeLeft = 60,
     this.membacaCorrect = 0,
     this.menulisCorrect = 0,
     this.berhitungCorrect = 0,
@@ -44,6 +47,7 @@ class TeamState {
     int? totalScore,
     GamePhase? activePhase,
     int? questionIndex,
+    int? timeLeft,
     int? membacaCorrect,
     int? menulisCorrect,
     int? berhitungCorrect,
@@ -55,6 +59,7 @@ class TeamState {
         totalScore: totalScore ?? this.totalScore,
         activePhase: activePhase ?? this.activePhase,
         questionIndex: questionIndex ?? this.questionIndex,
+        timeLeft: timeLeft ?? this.timeLeft,
         membacaCorrect: membacaCorrect ?? this.membacaCorrect,
         menulisCorrect: menulisCorrect ?? this.menulisCorrect,
         berhitungCorrect: berhitungCorrect ?? this.berhitungCorrect,
@@ -65,12 +70,9 @@ class TeamState {
 
 // ─── Global Game State ────────────────────────────────────────
 class CompetitiveState {
-  /// Fase global = fase yang sedang di-timer (min dari kedua tim)
+  /// Global status: countdown -> playing -> finished
   final GamePhase phase;
   final int countdownValue;
-
-  /// Timer per fase: 60 detik
-  final int timeLeft;
 
   final TeamState blueTeam;
   final TeamState redTeam;
@@ -82,7 +84,6 @@ class CompetitiveState {
   const CompetitiveState({
     this.phase = GamePhase.countdown,
     this.countdownValue = 3,
-    this.timeLeft = 60,
     required this.blueTeam,
     required this.redTeam,
     this.membacaQ = const [],
@@ -93,14 +94,12 @@ class CompetitiveState {
   CompetitiveState copyWith({
     GamePhase? phase,
     int? countdownValue,
-    int? timeLeft,
     TeamState? blueTeam,
     TeamState? redTeam,
   }) =>
       CompetitiveState(
         phase: phase ?? this.phase,
         countdownValue: countdownValue ?? this.countdownValue,
-        timeLeft: timeLeft ?? this.timeLeft,
         blueTeam: blueTeam ?? this.blueTeam,
         redTeam: redTeam ?? this.redTeam,
         membacaQ: membacaQ,
@@ -139,8 +138,8 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
 
   CompetitiveNotifier()
       : super(CompetitiveState(
-          blueTeam: const TeamState(id: TeamId.blue),
-          redTeam: const TeamState(id: TeamId.red),
+          blueTeam: const TeamState(id: TeamId.blue, timeLeft: kTimerSeconds),
+          redTeam: const TeamState(id: TeamId.red, timeLeft: kTimerSeconds),
           membacaQ: CompetitiveQuestions.membacaList..shuffle(),
           menulisQ: CompetitiveQuestions.menulisList..shuffle(),
           berhitungQ: CompetitiveQuestions.berhitungList..shuffle(),
@@ -155,7 +154,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     if (state.countdownValue > 1) {
       state = state.copyWith(countdownValue: state.countdownValue - 1);
     } else {
-      state = state.copyWith(phase: GamePhase.membaca, timeLeft: kTimerSeconds);
+      state = state.copyWith(phase: GamePhase.membaca); // main game starts
     }
   }
 
@@ -164,39 +163,32 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     if (state.phase == GamePhase.countdown || state.phase == GamePhase.finished) {
       return;
     }
-    if (state.timeLeft > 1) {
-      state = state.copyWith(timeLeft: state.timeLeft - 1);
-    } else {
-      _onTimerExpired();
-    }
-  }
 
-  void _onTimerExpired() {
-    // Paksa tim yang masih di fase global saat ini untuk pindah fase
     TeamState newBlue = state.blueTeam;
     TeamState newRed = state.redTeam;
 
-    if (state.blueTeam.activePhase == state.phase) {
-      newBlue = _forceAdvance(state.blueTeam);
-    }
-    if (state.redTeam.activePhase == state.phase) {
-      newRed = _forceAdvance(state.redTeam);
+    newBlue = _tickTeam(newBlue);
+    newRed = _tickTeam(newRed);
+
+    GamePhase newGlobalPhase = state.phase;
+    if (newBlue.activePhase == GamePhase.finished && newRed.activePhase == GamePhase.finished) {
+      newGlobalPhase = GamePhase.finished;
     }
 
-    final nextGlobal = _nextPhase(state.phase);
-    if (nextGlobal == GamePhase.finished) {
-      state = state.copyWith(
-        phase: GamePhase.finished,
-        blueTeam: newBlue,
-        redTeam: newRed,
-      );
+    state = state.copyWith(
+      phase: newGlobalPhase,
+      blueTeam: newBlue,
+      redTeam: newRed,
+    );
+  }
+
+  TeamState _tickTeam(TeamState team) {
+    if (team.activePhase == GamePhase.finished) return team;
+
+    if (team.timeLeft > 1) {
+      return team.copyWith(timeLeft: team.timeLeft - 1);
     } else {
-      state = state.copyWith(
-        phase: nextGlobal,
-        timeLeft: kTimerSeconds,
-        blueTeam: newBlue,
-        redTeam: newRed,
-      );
+      return _forceAdvance(team);
     }
   }
 
@@ -206,6 +198,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     return team.copyWith(
       activePhase: next,
       questionIndex: 0,
+      timeLeft: kTimerSeconds,
       lastFeedback: '⏰ Waktu Habis!',
       lastIsCorrect: false,
     );
@@ -224,7 +217,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     // ── Hitung score ──────────────────────────────────────────
     // Base: 10 poin per soal
     // Bonus kecepatan: max 10 poin extra (proporsional sisa waktu)
-    final timeBonus = (state.timeLeft / kTimerSeconds * 10).round();
+    final timeBonus = (team.timeLeft / kTimerSeconds * 10).round();
     final scoreGain = 10 + timeBonus;
 
     // ── Update statistik per fase ─────────────────────────────
@@ -243,7 +236,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
 
     if (isPhaseComplete) {
       // Bonus menyelesaikan fase lebih cepat dari timer
-      final phaseBonus = (state.timeLeft / kTimerSeconds * 15).round();
+      final phaseBonus = (team.timeLeft / kTimerSeconds * 15).round();
       final nextPhase = _nextPhase(team.activePhase);
 
       final feedback = phaseBonus > 0
@@ -255,6 +248,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
         totalScore: team.totalScore + scoreGain + phaseBonus,
         activePhase: nextPhase,
         questionIndex: 0,
+        timeLeft: nextPhase == GamePhase.finished ? 0 : kTimerSeconds,
         membacaCorrect: newMembacaC,
         menulisCorrect: newMenulisC,
         berhitungCorrect: newBerhitungC,
@@ -281,23 +275,13 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     final newRed = isBlue ? state.redTeam : newTeam;
 
     // ── Cek apakah global phase harus maju ───────────────────
-    // Keduanya sudah melewati fase global saat ini?
     GamePhase newGlobalPhase = state.phase;
-    int newTimeLeft = state.timeLeft;
-
-    if (state.phase != GamePhase.countdown && state.phase != GamePhase.finished) {
-      final blueAhead = _phaseOrder(newBlue.activePhase) > _phaseOrder(state.phase);
-      final redAhead = _phaseOrder(newRed.activePhase) > _phaseOrder(state.phase);
-      if (blueAhead && redAhead) {
-        final next = _nextPhase(state.phase);
-        newGlobalPhase = next;
-        newTimeLeft = next == GamePhase.finished ? state.timeLeft : kTimerSeconds;
-      }
+    if (newBlue.activePhase == GamePhase.finished && newRed.activePhase == GamePhase.finished) {
+      newGlobalPhase = GamePhase.finished;
     }
 
     state = state.copyWith(
       phase: newGlobalPhase,
-      timeLeft: newTimeLeft,
       blueTeam: newBlue,
       redTeam: newRed,
     );
@@ -314,21 +298,11 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     }
   }
 
-  int _phaseOrder(GamePhase p) {
-    switch (p) {
-      case GamePhase.countdown: return 0;
-      case GamePhase.membaca: return 1;
-      case GamePhase.menulis: return 2;
-      case GamePhase.berhitung: return 3;
-      case GamePhase.finished: return 4;
-    }
-  }
-
   // ─── Restart ─────────────────────────────────────────────────
   void restart() {
     state = CompetitiveState(
-      blueTeam: const TeamState(id: TeamId.blue),
-      redTeam: const TeamState(id: TeamId.red),
+      blueTeam: const TeamState(id: TeamId.blue, timeLeft: kTimerSeconds),
+      redTeam: const TeamState(id: TeamId.red, timeLeft: kTimerSeconds),
       membacaQ: CompetitiveQuestions.membacaList..shuffle(),
       menulisQ: CompetitiveQuestions.menulisList..shuffle(),
       berhitungQ: CompetitiveQuestions.berhitungList..shuffle(),
