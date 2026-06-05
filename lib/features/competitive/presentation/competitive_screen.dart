@@ -4,6 +4,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/audio/audio_provider.dart';
+import '../../../core/audio/audio_service.dart';
+import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/competitive_provider.dart';
 
@@ -37,6 +40,14 @@ class _CompetitiveScreenState extends ConsumerState<CompetitiveScreen> {
         _startGameTimer();
       } else {
         notifier.tickCountdown();
+        // Play countdown sounds
+        final updatedState = ref.read(competitiveProvider);
+        final audio = ref.read(audioServiceProvider);
+        if (updatedState.countdownValue > 0) {
+          audio.playSound(SoundType.countdown);
+        } else {
+          audio.playSound(SoundType.countdownGo);
+        }
       }
     });
   }
@@ -49,6 +60,11 @@ class _CompetitiveScreenState extends ConsumerState<CompetitiveScreen> {
         t.cancel();
       } else {
         notifier.tickTimer();
+        // Play countdown tick sound when timer ≤ 10 seconds
+        final updatedState = ref.read(competitiveProvider);
+        if (updatedState.timeLeft <= 10 && updatedState.timeLeft > 0) {
+          ref.read(audioServiceProvider).playSound(SoundType.countdown);
+        }
       }
     });
   }
@@ -91,8 +107,19 @@ class _CompetitiveScreenState extends ConsumerState<CompetitiveScreen> {
             team: state.blueTeam,
             soal: state.blueSoal,
             isFlipped: false,
-            onAnswer: (ans) =>
-                ref.read(competitiveProvider.notifier).answerBlue(ans),
+            onAnswer: (ans) {
+              ref.read(competitiveProvider.notifier).answerBlue(ans);
+              final updatedState = ref.read(competitiveProvider);
+              final audio = ref.read(audioServiceProvider);
+              if (updatedState.blueTeam.isCorrect) {
+                audio.playSound(SoundType.correct);
+              } else {
+                audio.playSound(SoundType.incorrect);
+              }
+              if (updatedState.phase == GamePhase.finished) {
+                audio.playSound(SoundType.celebration);
+              }
+            },
             timeLeft: state.timeLeft,
             totalTime: 60,
             phase: state.phase,
@@ -110,8 +137,19 @@ class _CompetitiveScreenState extends ConsumerState<CompetitiveScreen> {
               team: state.redTeam,
               soal: state.redSoal,
               isFlipped: true,
-              onAnswer: (ans) =>
-                  ref.read(competitiveProvider.notifier).answerRed(ans),
+              onAnswer: (ans) {
+                ref.read(competitiveProvider.notifier).answerRed(ans);
+                final updatedState = ref.read(competitiveProvider);
+                final audio = ref.read(audioServiceProvider);
+                if (updatedState.redTeam.isCorrect) {
+                  audio.playSound(SoundType.correct);
+                } else {
+                  audio.playSound(SoundType.incorrect);
+                }
+                if (updatedState.phase == GamePhase.finished) {
+                  audio.playSound(SoundType.celebration);
+                }
+              },
               timeLeft: state.timeLeft,
               totalTime: 60,
               phase: state.phase,
@@ -228,8 +266,10 @@ class _TeamPanel extends StatelessWidget {
                       children: soal.choices.map((choice) {
                         return GestureDetector(
                           onTap: phase != GamePhase.playing
-                              ? null
-                              : () => onAnswer(choice),
+                            ? null
+                            : () {
+                                onAnswer(choice);
+                              },
                           child: Container(
                             decoration: BoxDecoration(
                               color: teamColor,
@@ -532,7 +572,9 @@ class _FinishedOverlay extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   ElevatedButton(
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      context.go('/');
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.textMedium,
                       foregroundColor: Colors.white,

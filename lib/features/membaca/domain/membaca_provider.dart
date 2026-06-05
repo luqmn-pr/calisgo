@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/membaca_data.dart';
 
 // ─── State ────────────────────────────────────────────────────
-enum MembacaMode { huruf, kata }
+enum MembacaMode { huruf, kata, kalimat }
 
 class MembacaState {
   final MembacaMode mode;
@@ -12,6 +12,7 @@ class MembacaState {
   final List<String> shuffledSukuKata;
   final List<String> arrangedSukuKata;
   final bool isCorrect;
+  final bool isError;
 
   const MembacaState({
     this.mode = MembacaMode.huruf,
@@ -21,6 +22,7 @@ class MembacaState {
     this.shuffledSukuKata = const [],
     this.arrangedSukuKata = const [],
     this.isCorrect = false,
+    this.isError = false,
   });
 
   MembacaState copyWith({
@@ -31,6 +33,7 @@ class MembacaState {
     List<String>? shuffledSukuKata,
     List<String>? arrangedSukuKata,
     bool? isCorrect,
+    bool? isError,
   }) {
     return MembacaState(
       mode: mode ?? this.mode,
@@ -40,6 +43,7 @@ class MembacaState {
       shuffledSukuKata: shuffledSukuKata ?? this.shuffledSukuKata,
       arrangedSukuKata: arrangedSukuKata ?? this.arrangedSukuKata,
       isCorrect: isCorrect ?? this.isCorrect,
+      isError: isError ?? this.isError,
     );
   }
 }
@@ -60,9 +64,20 @@ class MembacaNotifier extends StateNotifier<MembacaState> {
     );
   }
 
+  void _initKalimatMode() {
+    final kalimat = MembacaData.kalimatLatihan[state.currentIndex];
+    final shuffled = List<String>.from(kalimat.potonganKata)..shuffle();
+    state = state.copyWith(
+      shuffledSukuKata: shuffled,
+      arrangedSukuKata: [],
+      isCorrect: false,
+    );
+  }
+
   void setMode(MembacaMode mode) {
     state = state.copyWith(mode: mode, currentIndex: 0, score: 0);
     if (mode == MembacaMode.kata) _initKataMode();
+    if (mode == MembacaMode.kalimat) _initKalimatMode();
   }
 
   void nextHuruf() {
@@ -81,27 +96,53 @@ class MembacaNotifier extends StateNotifier<MembacaState> {
   }
 
   // Suku kata drag-and-drop logic
-  // Menggunakan hitungan kemunculan (count-based) agar support suku kata duplikat
-  // misal MAMA = ['MA','MA'] — kedua slot harus bisa diisi secara independen
-  void pickSukuKata(String suku) {
-    final kata = MembacaData.kataLatihan[state.currentIndex];
-    // Hitung berapa kali suku ini muncul di sumber dan di arranged
-    final totalInSource = kata.sukuKata.where((s) => s == suku).length;
+  Future<void> pickSukuKata(String suku) async {
+    List<String> sourceList;
+    String targetAnswer;
+
+    if (state.mode == MembacaMode.kalimat) {
+      final k = MembacaData.kalimatLatihan[state.currentIndex];
+      sourceList = k.potonganKata;
+      targetAnswer = k.kalimatUtuh;
+    } else {
+      final k = MembacaData.kataLatihan[state.currentIndex];
+      sourceList = k.sukuKata;
+      targetAnswer = k.kata;
+    }
+
+    final totalInSource = sourceList.where((s) => s == suku).length;
     final usedCount = state.arrangedSukuKata.where((s) => s == suku).length;
     // Jika sudah semua terpakai, tolak
     if (usedCount >= totalInSource) return;
 
     final arranged = [...state.arrangedSukuKata, suku];
     bool correct = false;
-    if (arranged.length == kata.sukuKata.length) {
-      correct = arranged.join('') == kata.kata;
+    bool error = false;
+    
+    if (arranged.length == sourceList.length) {
+      if (state.mode == MembacaMode.kalimat) {
+        correct = arranged.join(' ') == targetAnswer;
+      } else {
+        correct = arranged.join('') == targetAnswer;
+      }
+      if (!correct) {
+        error = true;
+      }
     }
 
     state = state.copyWith(
       arrangedSukuKata: arranged,
       isCorrect: correct,
+      isError: error,
       score: correct ? state.score + 10 : state.score,
     );
+
+    if (error) {
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (mounted && state.isError) {
+        state = state.copyWith(arrangedSukuKata: [], isError: false);
+      }
+    }
   }
 
   void removeSukuKata(String suku) {
@@ -113,14 +154,24 @@ class MembacaNotifier extends StateNotifier<MembacaState> {
   }
 
   void nextKata() {
-    final next = (state.currentIndex + 1) % MembacaData.kataLatihan.length;
-    state = state.copyWith(currentIndex: next);
-    _initKataMode();
+    if (state.mode == MembacaMode.kalimat) {
+      final next = (state.currentIndex + 1) % MembacaData.kalimatLatihan.length;
+      state = state.copyWith(currentIndex: next);
+      _initKalimatMode();
+    } else {
+      final next = (state.currentIndex + 1) % MembacaData.kataLatihan.length;
+      state = state.copyWith(currentIndex: next);
+      _initKataMode();
+    }
   }
 
   void reset() {
     state = const MembacaState();
-    _initKataMode();
+    if (state.mode == MembacaMode.kalimat) {
+      _initKalimatMode();
+    } else {
+      _initKataMode();
+    }
   }
 }
 

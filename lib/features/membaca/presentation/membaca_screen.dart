@@ -6,6 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/app_sizes.dart';
+import '../../../core/audio/audio_provider.dart';
+import '../../../core/audio/audio_service.dart';
+import '../../../core/audio/sound_generator.dart';
+import '../../../core/audio/tts_service.dart';
+import '../../../core/audio/tts_provider.dart';
 import '../data/membaca_data.dart';
 import '../domain/membaca_provider.dart';
 
@@ -31,9 +36,16 @@ class MembacaScreen extends ConsumerWidget {
               children: [
                 _buildTopBar(context, ref, state),
                 Expanded(
-                  child: state.mode == MembacaMode.huruf
-                      ? _HurufView(state: state, ref: ref)
-                      : _KataView(state: state, ref: ref),
+                  child: Builder(builder: (context) {
+                    switch (state.mode) {
+                      case MembacaMode.huruf:
+                        return _HurufView(state: state, ref: ref);
+                      case MembacaMode.kata:
+                        return _KataView(state: state, ref: ref);
+                      case MembacaMode.kalimat:
+                        return _KalimatView(state: state, ref: ref);
+                    }
+                  }),
                 ),
               ],
             ),
@@ -68,7 +80,10 @@ class MembacaScreen extends ConsumerWidget {
         children: [
           _NavBtn(
             icon: Icons.arrow_back_ios_new_rounded,
-            onTap: () => context.pop(),
+            onTap: () {
+              ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+              context.pop();
+            },
           ),
           SizedBox(width: context.sw(12)),
           Text('📖', style: TextStyle(fontSize: context.sw(24))),
@@ -84,7 +99,10 @@ class MembacaScreen extends ConsumerWidget {
           const Spacer(),
           _ModeToggle(
             currentMode: state.mode,
-            onChanged: (m) => ref.read(membacaProvider.notifier).setMode(m),
+            onChanged: (m) {
+              ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+              ref.read(membacaProvider.notifier).setMode(m);
+            },
           ),
           SizedBox(width: context.sw(12)),
           _ScoreChip(score: state.score, color: AppColors.membacaColor),
@@ -120,6 +138,12 @@ class _ModeToggle extends StatelessWidget {
             icon: '📝',
             isActive: currentMode == MembacaMode.kata,
             onTap: () => onChanged(MembacaMode.kata),
+          ),
+          _ToggleChip(
+            label: 'Kalimat',
+            icon: '📚',
+            isActive: currentMode == MembacaMode.kalimat,
+            onTap: () => onChanged(MembacaMode.kalimat),
           ),
         ],
       ),
@@ -253,7 +277,10 @@ class _HurufView extends StatelessWidget {
       children: [
         _ArrowBtn(
           icon: Icons.chevron_left_rounded,
-          onTap: () => ref.read(membacaProvider.notifier).prevHuruf(),
+          onTap: () {
+            ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+            ref.read(membacaProvider.notifier).prevHuruf();
+          },
         ),
         Expanded(
           child: Center(
@@ -280,7 +307,10 @@ class _HurufView extends StatelessWidget {
         ),
         _ArrowBtn(
           icon: Icons.chevron_right_rounded,
-          onTap: () => ref.read(membacaProvider.notifier).nextHuruf(),
+          onTap: () {
+            ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+            ref.read(membacaProvider.notifier).nextHuruf();
+          },
         ),
       ],
     );
@@ -295,7 +325,11 @@ class _HurufCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => ref.read(membacaProvider.notifier).toggleAnswer(),
+      onTap: () {
+        ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+        ProviderScope.containerOf(context).read(ttsServiceProvider).speak(huruf.huruf);
+        ref.read(membacaProvider.notifier).toggleAnswer();
+      },
       child: Container(
         width: context.sw(170),
         height: context.sh(180),
@@ -363,59 +397,65 @@ class _ContohCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: context.sw(150),
-      height: context.sh(175),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.membacaColor.withOpacity(0.12),
-            AppColors.membacaColor.withOpacity(0.04),
+    return GestureDetector(
+      onTap: () {
+        ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+        ProviderScope.containerOf(context).read(ttsServiceProvider).speak(huruf.contohKata);
+      },
+      child: Container(
+        width: context.sw(150),
+        height: context.sh(175),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.membacaColor.withOpacity(0.12),
+              AppColors.membacaColor.withOpacity(0.04),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(context.sw(20)),
+          border: Border.all(
+            color: AppColors.membacaColor.withOpacity(0.3),
+            width: 2,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(huruf.emoji,
+                style: TextStyle(fontSize: context.sw(56))),
+            SizedBox(height: context.sh(8)),
+            Text(
+              huruf.contohKata,
+              style: GoogleFonts.nunito(
+                fontSize: context.fs(20),
+                color: AppColors.textDark,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            SizedBox(height: context.sh(4)),
+            RichText(
+              text: TextSpan(children: [
+                TextSpan(
+                  text: huruf.huruf,
+                  style: GoogleFonts.nunito(
+                    color: AppColors.membacaColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: context.fs(14),
+                  ),
+                ),
+                TextSpan(
+                  text: huruf.contohKata.substring(1).toLowerCase(),
+                  style: GoogleFonts.nunito(
+                    color: AppColors.textMedium,
+                    fontSize: context.fs(14),
+                  ),
+                ),
+              ]),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(context.sw(20)),
-        border: Border.all(
-          color: AppColors.membacaColor.withOpacity(0.3),
-          width: 2,
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(huruf.emoji,
-              style: TextStyle(fontSize: context.sw(56))),
-          SizedBox(height: context.sh(8)),
-          Text(
-            huruf.contohKata,
-            style: GoogleFonts.nunito(
-              fontSize: context.fs(20),
-              color: AppColors.textDark,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(height: context.sh(4)),
-          RichText(
-            text: TextSpan(children: [
-              TextSpan(
-                text: huruf.huruf,
-                style: GoogleFonts.nunito(
-                  color: AppColors.membacaColor,
-                  fontWeight: FontWeight.w900,
-                  fontSize: context.fs(14),
-                ),
-              ),
-              TextSpan(
-                text: huruf.contohKata.substring(1).toLowerCase(),
-                style: GoogleFonts.nunito(
-                  color: AppColors.textMedium,
-                  fontSize: context.fs(14),
-                ),
-              ),
-            ]),
-          ),
-        ],
       ),
     );
   }
@@ -564,41 +604,71 @@ class _KataView extends StatelessWidget {
 
               SizedBox(height: context.sh(16)),
 
-              if (state.isCorrect)
-                Column(
-                  children: [
-                    const Text('🎉', style: TextStyle(fontSize: 40))
-                        .animate()
-                        .scale(curve: Curves.elasticOut),
-                    Text(
-                      'Hebat! ${kata.kata} ✓',
-                      style: GoogleFonts.nunito(
-                        fontSize: context.fs(20),
-                        color: AppColors.correct,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    SizedBox(height: context.sh(10)),
-                    ElevatedButton(
-                      onPressed: () =>
-                          ref.read(membacaProvider.notifier).nextKata(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.membacaColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+              if (state.isCorrect || state.isError)
+                Builder(builder: (context) {
+                  if (state.isCorrect) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.correct);
+                      ProviderScope.containerOf(context).read(ttsServiceProvider).speak(kata.kata);
+                    });
+                  } else {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.incorrect);
+                    });
+                  }
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(state.isCorrect ? '🎉' : '❌', style: const TextStyle(fontSize: 40))
+                          .animate()
+                          .scale(curve: Curves.elasticOut)
+                          .then(delay: state.isError ? 0.ms : null)
+                          .shake(hz: state.isError ? 4 : 0),
+                      Text(
+                        state.isCorrect ? 'Hebat!' : 'Salah',
+                        style: GoogleFonts.nunito(
+                          fontSize: context.fs(20),
+                          color: state.isCorrect ? AppColors.correct : Colors.red,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                      child: Text(
-                        'Kata Berikutnya →',
-                        style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                }),
             ],
           ),
         ),
+        // Next button at bottom right
+        if (state.isCorrect)
+          Positioned(
+            bottom: context.sh(24),
+            right: context.sw(16),
+            child: ElevatedButton(
+              onPressed: () {
+                ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+                ref.read(membacaProvider.notifier).nextKata();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.membacaColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: context.sw(16), vertical: context.sh(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'Berikutnya',
+                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800, fontSize: context.fs(16)),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                ],
+              ),
+            ).animate().scale(curve: Curves.elasticOut),
+          ),
         // Dot progress
         Positioned(
           bottom: context.sh(12),
@@ -680,6 +750,227 @@ class _DropSlot extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Kalimat View ────────────────────────────────────────────────
+class _KalimatView extends StatelessWidget {
+  final MembacaState state;
+  final WidgetRef ref;
+  const _KalimatView({required this.state, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final kalimat = MembacaData.kalimatLatihan[state.currentIndex];
+
+    return Stack(
+      children: [
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                kalimat.emoji,
+                style: TextStyle(fontSize: context.sw(64)),
+              )
+                  .animate(key: ValueKey(state.currentIndex))
+                  .scale(
+                    begin: const Offset(0, 0),
+                    end: const Offset(1, 1),
+                    curve: Curves.elasticOut,
+                  ),
+
+              SizedBox(height: context.sh(6)),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Susun kata menjadi kalimat!',
+                    style: GoogleFonts.nunito(
+                      fontSize: context.fs(16),
+                      color: AppColors.textMedium,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.volume_up_rounded, color: AppColors.membacaColor),
+                    onPressed: () {
+                      ProviderScope.containerOf(context).read(ttsServiceProvider).speak(kalimat.kalimatUtuh);
+                    },
+                  ),
+                ],
+              ),
+
+              SizedBox(height: context.sh(10)),
+
+              // Drop zone
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: context.sw(8),
+                runSpacing: context.sh(8),
+                children: List.generate(kalimat.potonganKata.length, (i) {
+                  return _DropSlot(
+                    content: i < state.arrangedSukuKata.length
+                        ? state.arrangedSukuKata[i]
+                        : null,
+                    isCorrect: state.isCorrect,
+                    onRemove: i < state.arrangedSukuKata.length
+                        ? () => ref
+                            .read(membacaProvider.notifier)
+                            .removeSukuKata(state.arrangedSukuKata[i])
+                        : null,
+                  );
+                }),
+              ),
+
+              SizedBox(height: context.sh(12)),
+
+              // Source kata
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: context.sw(8),
+                runSpacing: context.sh(8),
+                children: state.shuffledSukuKata.map((kataSource) {
+                  final totalInSource =
+                      kalimat.potonganKata.where((s) => s == kataSource).length;
+                  final usedCount =
+                      state.arrangedSukuKata.where((s) => s == kataSource).length;
+                  final used = usedCount >= totalInSource;
+                  
+                  return GestureDetector(
+                    onTap: used
+                        ? null
+                        : () => ref
+                            .read(membacaProvider.notifier)
+                            .pickSukuKata(kataSource),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.sw(20),
+                        vertical: context.sh(10),
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            used ? Colors.grey.shade300 : AppColors.membacaColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: used
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: AppColors.membacaColor.withOpacity(0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                      ),
+                      child: Text(
+                        kataSource,
+                        style: GoogleFonts.nunito(
+                          color: used ? Colors.grey.shade500 : Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: context.fs(20),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              SizedBox(height: context.sh(10)),
+
+              if (state.isCorrect || state.isError)
+                Builder(builder: (context) {
+                  if (state.isCorrect) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.correct);
+                      ProviderScope.containerOf(context).read(ttsServiceProvider).speak(kalimat.kalimatUtuh);
+                    });
+                  } else {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.incorrect);
+                    });
+                  }
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(state.isCorrect ? '🎉' : '❌', style: const TextStyle(fontSize: 40))
+                          .animate()
+                          .scale(curve: Curves.elasticOut)
+                          .then(delay: state.isError ? 0.ms : null)
+                          .shake(hz: state.isError ? 4 : 0),
+                      Text(
+                        state.isCorrect ? 'Hebat!' : 'Salah',
+                        style: GoogleFonts.nunito(
+                          fontSize: context.fs(20),
+                          color: state.isCorrect ? AppColors.correct : Colors.red,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+            ],
+          ),
+        ),
+        // Next button at bottom right
+        if (state.isCorrect)
+          Positioned(
+            bottom: context.sh(24),
+            right: context.sw(16),
+            child: ElevatedButton(
+              onPressed: () {
+                ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+                ref.read(membacaProvider.notifier).nextKata();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.membacaColor,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: context.sw(16), vertical: context.sh(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'Berikutnya',
+                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800, fontSize: context.fs(16)),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                ],
+              ),
+            ).animate().scale(curve: Curves.elasticOut),
+          ),
+        // Dot progress
+        Positioned(
+          bottom: context.sh(12),
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              MembacaData.kalimatLatihan.length,
+              (i) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin:
+                    EdgeInsets.symmetric(horizontal: context.sw(3)),
+                width: i == state.currentIndex ? 18 : 7,
+                height: 7,
+                decoration: BoxDecoration(
+                  color: i == state.currentIndex
+                      ? AppColors.membacaColor
+                      : AppColors.membacaColor.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

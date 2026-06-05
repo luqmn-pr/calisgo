@@ -65,25 +65,25 @@ class BerhitungData {
         type: SoalType.menghitung,
         angkaA: 3,
         item: items[0],
-        pertanyaan: 'Ada berapa apel di sini?',
+        pertanyaan: 'Masukkan 3 apel ke dalam kotak!',
       ),
       BerhitungSoal(
         type: SoalType.menghitung,
         angkaA: 5,
         item: items[1],
-        pertanyaan: 'Hitung bintang berikut!',
+        pertanyaan: 'Masukkan 5 bintang ke dalam kotak!',
       ),
       BerhitungSoal(
         type: SoalType.menghitung,
         angkaA: 4,
         item: items[2],
-        pertanyaan: 'Ada berapa bunga?',
+        pertanyaan: 'Masukkan 4 bunga ke dalam kotak!',
       ),
       BerhitungSoal(
         type: SoalType.menghitung,
         angkaA: 2,
         item: items[3],
-        pertanyaan: 'Hitung balon ini!',
+        pertanyaan: 'Masukkan 2 balon ke dalam kotak!',
       ),
       // Penjumlahan sederhana
       BerhitungSoal(
