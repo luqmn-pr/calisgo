@@ -3,6 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/audio/audio_provider.dart';
+
+import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/menulis_provider.dart';
 
@@ -105,7 +108,9 @@ class _ControlsPanel extends StatelessWidget {
                     const SizedBox(height: 20),
                     // Back button
                     GestureDetector(
-                      onTap: () => context.pop(),
+                      onTap: () {
+                        context.pop();
+                      },
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16),
                         padding: const EdgeInsets.all(10),
@@ -166,13 +171,17 @@ class _ControlsPanel extends StatelessWidget {
                     _ActionBtn(
                       icon: Icons.refresh,
                       label: 'Ulangi',
-                      onTap: () => ref.read(menulisProvider.notifier).reset(),
+                      onTap: () {
+                        ref.read(menulisProvider.notifier).reset();
+                      },
                     ),
                     const SizedBox(height: 8),
                     _ActionBtn(
                       icon: Icons.skip_next,
                       label: 'Lewati',
-                      onTap: () => ref.read(menulisProvider.notifier).nextLetter(),
+                      onTap: () {
+                        ref.read(menulisProvider.notifier).nextLetter();
+                      },
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -251,6 +260,17 @@ class _FeedbackBanner extends StatelessWidget {
 
     final isCorrect = state.phase == TracingPhase.complete ||
         state.feedbackMessage.contains('✓');
+    // Play sound effect based on tracing feedback
+    if (state.feedbackMessage.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final audio = ProviderScope.containerOf(context).read(audioServiceProvider);
+        if (isCorrect) {
+          audio.playSound(SoundType.correct);
+        } else {
+          audio.playSound(SoundType.incorrect);
+        }
+      });
+    }
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),

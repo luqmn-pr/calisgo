@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/audio/audio_provider.dart';
+import '../../../core/audio/audio_service.dart';
+import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/app_sizes.dart';
+import '../../../shared/widgets/settings_dialog.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _floatController;
   late AnimationController _rainbowController;
 
@@ -76,16 +81,82 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               child: Row(
                 children: [
-                  // Left brand panel
-                  _buildBrandPanel(context),
+                  // Left module cards
+                  Expanded(
+                    flex: 5,
+                    child: Padding(
+                      padding: EdgeInsets.only(right: context.sw(20)),
+                      child: _buildModuleSection(context),
+                    ),
+                  ),
 
-                  SizedBox(width: context.sw(16)),
+                  SizedBox(width: context.sw(12)),
 
-                  // Right module cards
-                  Expanded(child: _buildModuleSection(context)),
+                  // Right character panel
+                  Expanded(flex: 4, child: _buildCharacterPanel(context)),
                 ],
               ),
             ),
+          ),
+
+          // ── Corner buttons ────────────────────────────
+          Positioned(
+            top: context.sh(14),
+            left: context.sw(14),
+            child: GestureDetector(
+              onTap: () {
+                context.go('/landing');
+              },
+              child: Container(
+                width: context.sw(42),
+                height: context.sw(42),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFEF5350),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEF5350).withOpacity(0.5),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  color: Colors.white,
+                  size: context.sw(22),
+                ),
+              ),
+            ).animate(delay: 800.ms).fadeIn().scale(),
+          ),
+          Positioned(
+            top: context.sh(14),
+            right: context.sw(14),
+            child: GestureDetector(
+              onTap: () {
+                SettingsDialog.show(context);
+              },
+              child: Container(
+                width: context.sw(42),
+                height: context.sw(42),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF29B6F6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF29B6F6).withOpacity(0.5),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.settings_rounded,
+                  color: Colors.white,
+                  size: context.sw(22),
+                ),
+              ),
+            ).animate(delay: 900.ms).fadeIn().scale(),
           ),
         ],
       ),
@@ -138,131 +209,79 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  // ─── Brand panel (left) ──────────────────────────────────────
-  Widget _buildBrandPanel(BuildContext context) {
+  // ─── Character panel (right) ──────────────────────────────────────
+  Widget _buildCharacterPanel(BuildContext context) {
     return AnimatedBuilder(
       animation: _floatController,
       builder: (_, child) => Transform.translate(
-        offset: Offset(0, -4 * _floatController.value),
+        offset: Offset(0, -8 * _floatController.value),
         child: child,
       ),
-      child: Container(
-        width: context.sw(190),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(context.sw(24)),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF29B6F6), Color(0xFF0277BD)],
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          // Boy Character
+          Container(
+            padding: EdgeInsets.only(top: context.sh(40)),
+            child: Image.asset(
+              'assets/images/char_boy.png',
+              height: context.sh(320),
+              fit: BoxFit.contain,
+            ).animate(delay: 200.ms).fadeIn().slideX(begin: 0.5, end: 0),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF29B6F6).withOpacity(0.5),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Logo image
-            Container(
-              width: context.sw(90),
-              height: context.sw(90),
+          
+          // Speech Bubble
+          Positioned(
+            top: context.sh(30),
+            left: 0,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.sw(12),
+                vertical: context.sh(8),
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(context.sw(20)),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
-                    blurRadius: 12,
+                    blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(context.sw(18)),
-                child: Image.asset(
-                  'assets/images/app_logo.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
-            )
-                .animate()
-                .scale(
-                  begin: const Offset(0.0, 0.0),
-                  end: const Offset(1.0, 1.0),
-                  duration: 600.ms,
-                  curve: Curves.elasticOut,
-                ),
-
-            SizedBox(height: context.sh(12)),
-
-            Text(
-              'ProjectTK',
-              style: GoogleFonts.nunito(
-                fontSize: context.fs(22),
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: 0.5,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(1, 2),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Halo Teman!',
+                    style: GoogleFonts.nunito(
+                      fontSize: context.fs(14),
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF0277BD),
+                    ),
+                  ),
+                  SizedBox(height: context.sh(2)),
+                  Text(
+                    'Ayo kita belajar\nsama-sama!',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.nunito(
+                      fontSize: context.fs(10),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
                   ),
                 ],
               ),
-            )
-                .animate(delay: 200.ms)
-                .fadeIn()
-                .slideY(begin: 0.3, end: 0),
-
-            SizedBox(height: context.sh(4)),
-
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.sw(12)),
-              child: Text(
-                'Belajar Calistung\nMenjadi Menyenangkan!',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
-                  fontSize: context.fs(11),
-                  color: Colors.white.withOpacity(0.9),
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
+            ).animate(delay: 800.ms).scale(
+                  curve: Curves.elasticOut,
+                  duration: 600.ms,
                 ),
-              )
-                  .animate(delay: 400.ms)
-                  .fadeIn()
-                  .slideY(begin: 0.3, end: 0),
-            ),
-
-            SizedBox(height: context.sh(14)),
-
-            // Stars
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(3, (i) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(horizontal: context.sw(3)),
-                  child: Icon(
-                    Icons.star_rounded,
-                    color: const Color(0xFFFFD740),
-                    size: context.sw(26),
-                  )
-                      .animate(delay: Duration(milliseconds: 600 + i * 150))
-                      .scale(curve: Curves.elasticOut),
-                );
-              }),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    )
-        .animate(delay: 100.ms)
-        .fadeIn(duration: 500.ms)
-        .slideX(begin: -0.3, end: 0, curve: Curves.easeOut);
+    );
   }
 
   // ─── Module section (right) ──────────────────────────────────
@@ -296,51 +315,63 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
         // Module cards
         Expanded(
-          child: Row(
+          child: Column(
             children: [
-              _ModuleCard(
-                emoji: '📖',
-                title: 'Membaca',
-                subtitle: 'Mengenal\nHuruf & Kata',
-                color: AppColors.membacaColor,
-                route: '/membaca',
-                delay: 0,
-                bgColor: const Color(0xFFFF8A65),
-                shadowColor: const Color(0xFFD84315),
+              Expanded(
+                child: Row(
+                  children: [
+                    _ModuleCard(
+                      emoji: '📖',
+                      title: 'Membaca',
+                      subtitle: 'Mengenal\nHuruf & Kata',
+                      color: AppColors.membacaColor,
+                      route: '/membaca',
+                      delay: 0,
+                      bgColor: const Color(0xFFFF8A65),
+                      shadowColor: const Color(0xFFD84315),
+                    ),
+                    SizedBox(width: context.sw(10)),
+                    _ModuleCard(
+                      emoji: '✏️',
+                      title: 'Menulis',
+                      subtitle: 'Menebalkan\nHuruf',
+                      color: AppColors.menulisColor,
+                      route: '/menulis',
+                      delay: 80,
+                      bgColor: const Color(0xFF66BB6A),
+                      shadowColor: const Color(0xFF2E7D32),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(width: context.sw(10)),
-              _ModuleCard(
-                emoji: '✏️',
-                title: 'Menulis',
-                subtitle: 'Menebalkan\nHuruf',
-                color: AppColors.menulisColor,
-                route: '/menulis',
-                delay: 80,
-                bgColor: const Color(0xFF66BB6A),
-                shadowColor: const Color(0xFF2E7D32),
-              ),
-              SizedBox(width: context.sw(10)),
-              _ModuleCard(
-                emoji: '🔢',
-                title: 'Berhitung',
-                subtitle: 'Menghitung\n& Menjumlah',
-                color: AppColors.berhitungColor,
-                route: '/berhitung',
-                delay: 160,
-                bgColor: const Color(0xFFAB47BC),
-                shadowColor: const Color(0xFF6A1B9A),
-              ),
-              SizedBox(width: context.sw(10)),
-              _ModuleCard(
-                emoji: '⚔️',
-                title: 'Kompetisi',
-                subtitle: '2 Tim —\n1 Layar',
-                color: AppColors.competitiveColor,
-                route: '/competitive',
-                delay: 240,
-                bgColor: const Color(0xFFFFD54F),
-                shadowColor: const Color(0xFFFF6F00),
-                isSpecial: true,
+              SizedBox(height: context.sh(10)),
+              Expanded(
+                child: Row(
+                  children: [
+                    _ModuleCard(
+                      emoji: '🔢',
+                      title: 'Berhitung',
+                      subtitle: 'Menghitung\n& Menjumlah',
+                      color: AppColors.berhitungColor,
+                      route: '/berhitung',
+                      delay: 160,
+                      bgColor: const Color(0xFFAB47BC),
+                      shadowColor: const Color(0xFF6A1B9A),
+                    ),
+                    SizedBox(width: context.sw(10)),
+                    _ModuleCard(
+                      emoji: '⚔️',
+                      title: 'Kompetisi',
+                      subtitle: '2 Tim —\n1 Layar',
+                      color: AppColors.competitiveColor,
+                      route: '/competitive',
+                      delay: 240,
+                      bgColor: const Color(0xFFFFD54F),
+                      shadowColor: const Color(0xFFFF6F00),
+                      isSpecial: true,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -490,8 +521,8 @@ class _ModuleCardState extends State<_ModuleCard>
                     children: [
                       // Emoji in circle
                       Container(
-                        width: context.sw(60),
-                        height: context.sw(60),
+                        width: context.sw(45),
+                        height: context.sw(45),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.25),
@@ -499,7 +530,7 @@ class _ModuleCardState extends State<_ModuleCard>
                         child: Center(
                           child: Text(
                             widget.emoji,
-                            style: TextStyle(fontSize: context.sw(32)),
+                            style: TextStyle(fontSize: context.sw(26)),
                           ),
                         ),
                       ),
@@ -508,7 +539,7 @@ class _ModuleCardState extends State<_ModuleCard>
                         widget.title,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.nunito(
-                          fontSize: context.fs(16),
+                          fontSize: context.fs(14),
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           shadows: [
@@ -525,7 +556,7 @@ class _ModuleCardState extends State<_ModuleCard>
                         widget.subtitle,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.nunito(
-                          fontSize: context.fs(10),
+                          fontSize: context.fs(9),
                           color: Colors.white.withOpacity(0.92),
                           height: 1.3,
                           fontWeight: FontWeight.w600,

@@ -6,6 +6,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/audio/audio_provider.dart';
+import '../../../core/audio/audio_service.dart';
+import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/competitive_questions.dart';
 import '../domain/competitive_provider.dart';
@@ -124,11 +127,7 @@ class _GameBody extends ConsumerWidget {
             sh: sh,
           ),
         ),
-        _CenterDivider(
-          state: state,
-          dividerW: dividerW,
-          sh: sh,
-        ),
+        _CenterDivider(state: state, dividerW: dividerW, sh: sh),
         Expanded(
           child: Transform.rotate(
             angle: math.pi,
@@ -170,27 +169,26 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
   String _transitionLabel = '';
   GamePhase? _prevActivePhase;
 
-  Color get teamColor =>
-      widget.isBlue ? _Colors.teamBlue : _Colors.teamRed;
+  Color get teamColor => widget.isBlue ? _Colors.teamBlue : _Colors.teamRed;
 
   TeamState get team =>
       widget.isBlue ? widget.state.blueTeam : widget.state.redTeam;
 
   String _phaseLabel(GamePhase p) => switch (p) {
-        GamePhase.membaca => '📖 Fase Membaca',
-        GamePhase.menulis => '✏️ Fase Menulis',
-        GamePhase.berhitung => '🔢 Fase Berhitung',
-        GamePhase.finished => '🏆 Selesai!',
-        _ => '',
-      };
+    GamePhase.membaca => '📖 Fase Membaca',
+    GamePhase.menulis => '✏️ Fase Menulis',
+    GamePhase.berhitung => '🔢 Fase Berhitung',
+    GamePhase.finished => '🏆 Selesai!',
+    _ => '',
+  };
 
   String _phaseIcon(GamePhase p) => switch (p) {
-        GamePhase.membaca => '📖',
-        GamePhase.menulis => '✏️',
-        GamePhase.berhitung => '🔢',
-        GamePhase.finished => '🏆',
-        _ => '🎮',
-      };
+    GamePhase.membaca => '📖',
+    GamePhase.menulis => '✏️',
+    GamePhase.berhitung => '🔢',
+    GamePhase.finished => '🏆',
+    _ => '🎮',
+  };
 
   @override
   void didUpdateWidget(_TeamPanel old) {
@@ -245,11 +243,7 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
 
               // Feedback Banner
               if (t.lastFeedback.isNotEmpty)
-                _FeedbackBanner(
-                  team: t,
-                  teamColor: teamColor,
-                  sh: widget.sh,
-                ),
+                _FeedbackBanner(team: t, teamColor: teamColor, sh: widget.sh),
 
               // Challenge
               Expanded(
@@ -288,10 +282,7 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
                           fontSize: (widget.sh * 0.075).clamp(22.0, 44.0),
                           fontWeight: FontWeight.w900,
                         ),
-                      )
-                          .animate()
-                          .scale(curve: Curves.elasticOut)
-                          .fadeIn(),
+                      ).animate().scale(curve: Curves.elasticOut).fadeIn(),
                       SizedBox(height: widget.sh * 0.01),
                       Text(
                         '60 detik • 5 soal',
@@ -439,9 +430,10 @@ class _Chip extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label,
-          style: TextStyle(
-              color: fg, fontWeight: FontWeight.w800, fontSize: fs)),
+      child: Text(
+        label,
+        style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: fs),
+      ),
     );
   }
 }
@@ -466,8 +458,9 @@ class _FeedbackBanner extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.symmetric(vertical: sh * 0.008),
-        color: (isOk ? AppColors.correct : AppColors.incorrect)
-            .withValues(alpha: 0.18),
+        color: (isOk ? AppColors.correct : AppColors.incorrect).withValues(
+          alpha: 0.18,
+        ),
         child: Center(
           child: Text(
             team.lastFeedback,
@@ -560,84 +553,86 @@ class _BerhitungPanelState extends State<_BerhitungPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final h = constraints.maxHeight;
-      return Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: constraints.maxWidth * 0.04,
-              vertical: h * 0.03,
-            ),
-            decoration: BoxDecoration(
-              color: _showCorrect
-                  ? Colors.green.withValues(alpha: 0.15)
-                  : (_showWrong
-                      ? Colors.red.withValues(alpha: 0.15)
-                      : Colors.white),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _showCorrect
-                    ? Colors.green
-                    : (_showWrong ? Colors.red : Colors.transparent),
-                width: 2,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final h = constraints.maxHeight;
+        return Column(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: constraints.maxWidth * 0.04,
+                vertical: h * 0.03,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.teamColor.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Text(
-              _showCorrect
-                  ? '✅ Benar!'
-                  : (_showWrong
-                      ? '❌ Salah, hitung lagi!'
-                      : widget.challenge.question),
-              style: TextStyle(
-                fontSize: (h * 0.06).clamp(11.0, 16.0),
-                fontWeight: FontWeight.w800,
+              decoration: BoxDecoration(
                 color: _showCorrect
-                    ? Colors.green
-                    : (_showWrong ? Colors.red : widget.teamColor),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(height: h * 0.02),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: GameWidget(game: _game),
-            ),
-          ),
-          SizedBox(height: h * 0.02),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _onSubmit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.teamColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: h * 0.04),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                    ? Colors.green.withValues(alpha: 0.15)
+                    : (_showWrong
+                          ? Colors.red.withValues(alpha: 0.15)
+                          : Colors.white),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _showCorrect
+                      ? Colors.green
+                      : (_showWrong ? Colors.red : Colors.transparent),
+                  width: 2,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.teamColor.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Text(
-                'Submit Jawaban',
+                _showCorrect
+                    ? '✅ Benar!'
+                    : (_showWrong
+                          ? '❌ Salah, hitung lagi!'
+                          : widget.challenge.question),
                 style: TextStyle(
-                  fontSize: (h * 0.05).clamp(12.0, 16.0),
-                  fontWeight: FontWeight.w900,
+                  fontSize: (h * 0.06).clamp(11.0, 16.0),
+                  fontWeight: FontWeight.w800,
+                  color: _showCorrect
+                      ? Colors.green
+                      : (_showWrong ? Colors.red : widget.teamColor),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: h * 0.02),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: GameWidget(game: _game),
+              ),
+            ),
+            SizedBox(height: h * 0.02),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _onSubmit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.teamColor,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: h * 0.04),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Submit Jawaban',
+                  style: TextStyle(
+                    fontSize: (h * 0.05).clamp(12.0, 16.0),
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -653,16 +648,17 @@ class _CenterDivider extends StatelessWidget {
   });
 
   String _phaseIcon(GamePhase p) => switch (p) {
-        GamePhase.membaca => '📖',
-        GamePhase.menulis => '✏️',
-        GamePhase.berhitung => '🔢',
-        GamePhase.finished => '🏆',
-        _ => '🎮',
-      };
+    GamePhase.membaca => '📖',
+    GamePhase.menulis => '✏️',
+    GamePhase.berhitung => '🔢',
+    GamePhase.finished => '🏆',
+    _ => '🎮',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final isUrgent = state.timeLeft <= 10 &&
+    final isUrgent =
+        state.timeLeft <= 10 &&
         state.phase != GamePhase.countdown &&
         state.phase != GamePhase.finished;
     final fs = (dividerW * 0.25).clamp(8.0, 14.0);
@@ -689,12 +685,14 @@ class _CenterDivider extends StatelessWidget {
             style: TextStyle(fontSize: fs * 1.3),
           ),
           SizedBox(height: sh * 0.01),
-          const Text('VS',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-                fontSize: 11,
-              )),
+          const Text(
+            'VS',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 11,
+            ),
+          ),
           SizedBox(height: sh * 0.01),
           Text(
             _phaseIcon(state.redTeam.activePhase),
@@ -760,12 +758,12 @@ class _PhaseDots extends StatelessWidget {
   });
 
   int _order(GamePhase p) => switch (p) {
-        GamePhase.membaca => 1,
-        GamePhase.menulis => 2,
-        GamePhase.berhitung => 3,
-        GamePhase.finished => 4,
-        _ => 0,
-      };
+    GamePhase.membaca => 1,
+    GamePhase.menulis => 2,
+    GamePhase.berhitung => 3,
+    GamePhase.finished => 4,
+    _ => 0,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -779,8 +777,8 @@ class _PhaseDots extends StatelessWidget {
         final color = (bDone && rDone)
             ? Colors.white
             : active
-                ? Colors.white.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.2);
+            ? Colors.white.withValues(alpha: 0.7)
+            : Colors.white.withValues(alpha: 0.2);
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           margin: EdgeInsets.symmetric(vertical: dotSize * 0.2),
@@ -813,13 +811,13 @@ class _CountdownOverlay extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              value > 0 ? '$value' : 'MULAI!',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: (sh * 0.25).clamp(60.0, 120.0),
-                fontWeight: FontWeight.w900,
-              ),
-            )
+                  value > 0 ? '$value' : 'MULAI!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: (sh * 0.25).clamp(60.0, 120.0),
+                    fontWeight: FontWeight.w900,
+                  ),
+                )
                 .animate(key: ValueKey(value))
                 .scale(
                   begin: const Offset(1.5, 1.5),
@@ -876,7 +874,9 @@ class _ResultOverlay extends StatelessWidget {
       child: Center(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(
-              horizontal: sw * 0.04, vertical: sh * 0.04),
+            horizontal: sw * 0.04,
+            vertical: sh * 0.04,
+          ),
           child: Container(
             width: containerW,
             padding: EdgeInsets.all(containerW * 0.07),
@@ -897,16 +897,16 @@ class _ResultOverlay extends StatelessWidget {
                   isDraw
                       ? '🤝 Seri!'
                       : (winner == TeamId.blue
-                          ? '🔵 Tim Biru Menang!'
-                          : '🔴 Tim Merah Menang!'),
+                            ? '🔵 Tim Biru Menang!'
+                            : '🔴 Tim Merah Menang!'),
                   style: TextStyle(
                     fontSize: (sh * 0.04).clamp(16.0, 26.0),
                     fontWeight: FontWeight.w900,
                     color: isDraw
                         ? Colors.black87
                         : (winner == TeamId.blue
-                            ? _Colors.teamBlue
-                            : _Colors.teamRed),
+                              ? _Colors.teamBlue
+                              : _Colors.teamRed),
                   ),
                   textAlign: TextAlign.center,
                 ).animate().scale(curve: Curves.elasticOut),
@@ -918,9 +918,7 @@ class _ResultOverlay extends StatelessWidget {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () {
-                        ref
-                            .read(competitiveProvider.notifier)
-                            .restart();
+                        ref.read(competitiveProvider.notifier).restart();
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           ref
                               .read(competitiveProvider.notifier)
@@ -936,8 +934,7 @@ class _ResultOverlay extends StatelessWidget {
                         ),
                       ),
                       icon: Icon(Icons.replay, size: fs),
-                      label:
-                          Text('Main Lagi', style: TextStyle(fontSize: fs)),
+                      label: Text('Main Lagi', style: TextStyle(fontSize: fs)),
                     ),
                     SizedBox(width: containerW * 0.04),
                     ElevatedButton.icon(
@@ -976,17 +973,17 @@ class _PhaseScoreTable extends StatelessWidget {
       (
         '📖 Membaca',
         state.blueTeam.membacaCorrect,
-        state.redTeam.membacaCorrect
+        state.redTeam.membacaCorrect,
       ),
       (
         '✏️ Menulis',
         state.blueTeam.menulisCorrect,
-        state.redTeam.menulisCorrect
+        state.redTeam.menulisCorrect,
       ),
       (
         '🔢 Berhitung',
         state.blueTeam.berhitungCorrect,
-        state.redTeam.berhitungCorrect
+        state.redTeam.berhitungCorrect,
       ),
     ];
 
@@ -995,98 +992,116 @@ class _PhaseScoreTable extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text('🔵 Tim Biru',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _Colors.teamBlue,
-                    fontWeight: FontWeight.w800,
-                    fontSize: fs,
-                  )),
+              child: Text(
+                '🔵 Tim Biru',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _Colors.teamBlue,
+                  fontWeight: FontWeight.w800,
+                  fontSize: fs,
+                ),
+              ),
             ),
             SizedBox(
               width: 80,
-              child: Text('Fase',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: fs * 0.8,
-                    color: Colors.black45,
-                  )),
+              child: Text(
+                'Fase',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: fs * 0.8, color: Colors.black45),
+              ),
             ),
             Expanded(
-              child: Text('🔴 Tim Merah',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _Colors.teamRed,
-                    fontWeight: FontWeight.w800,
-                    fontSize: fs,
-                  )),
+              child: Text(
+                '🔴 Tim Merah',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _Colors.teamRed,
+                  fontWeight: FontWeight.w800,
+                  fontSize: fs,
+                ),
+              ),
             ),
           ],
         ),
         const Divider(height: 12),
-        ...rows.map((r) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text('${r.$2}/5',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: fs * 1.1,
-                          fontWeight: FontWeight.w800,
-                          color:
-                              r.$2 > r.$3 ? _Colors.teamBlue : Colors.black38,
-                        )),
+        ...rows.map(
+          (r) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${r.$2}/5',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: fs * 1.1,
+                      fontWeight: FontWeight.w800,
+                      color: r.$2 > r.$3 ? _Colors.teamBlue : Colors.black38,
+                    ),
                   ),
-                  SizedBox(
-                    width: 80,
-                    child: Text(r.$1,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontSize: fs * 0.85, color: Colors.black54)),
+                ),
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    r.$1,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: fs * 0.85,
+                      color: Colors.black54,
+                    ),
                   ),
-                  Expanded(
-                    child: Text('${r.$3}/5',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: fs * 1.1,
-                          fontWeight: FontWeight.w800,
-                          color:
-                              r.$3 > r.$2 ? _Colors.teamRed : Colors.black38,
-                        )),
+                ),
+                Expanded(
+                  child: Text(
+                    '${r.$3}/5',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: fs * 1.1,
+                      fontWeight: FontWeight.w800,
+                      color: r.$3 > r.$2 ? _Colors.teamRed : Colors.black38,
+                    ),
                   ),
-                ],
-              ),
-            )),
+                ),
+              ],
+            ),
+          ),
+        ),
         const Divider(height: 12),
         Row(
           children: [
             Expanded(
-              child: Text('${state.blueTeam.totalScore} pts',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: fs * 1.3,
-                    fontWeight: FontWeight.w900,
-                    color: _Colors.teamBlue,
-                  )),
+              child: Text(
+                '${state.blueTeam.totalScore} pts',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: fs * 1.3,
+                  fontWeight: FontWeight.w900,
+                  color: _Colors.teamBlue,
+                ),
+              ),
             ),
             const SizedBox(
               width: 80,
-              child: Text('TOTAL',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 9,
-                      color: Colors.black45,
-                      fontWeight: FontWeight.w700)),
+              child: Text(
+                'TOTAL',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Colors.black45,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
             Expanded(
-              child: Text('${state.redTeam.totalScore} pts',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: fs * 1.3,
-                    fontWeight: FontWeight.w900,
-                    color: _Colors.teamRed,
-                  )),
+              child: Text(
+                '${state.redTeam.totalScore} pts',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: fs * 1.3,
+                  fontWeight: FontWeight.w900,
+                  color: _Colors.teamRed,
+                ),
+              ),
             ),
           ],
         ),
@@ -1109,11 +1124,9 @@ class _DoneWidget extends StatelessWidget {
       children: [
         const Text('🏆', style: TextStyle(fontSize: 52))
             .animate(onPlay: (c) => c.repeat())
-            .scale(
-                begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1))
+            .scale(begin: const Offset(0.9, 0.9), end: const Offset(1.1, 1.1))
             .then()
-            .scale(
-                begin: const Offset(1.1, 1.1), end: const Offset(0.9, 0.9)),
+            .scale(begin: const Offset(1.1, 1.1), end: const Offset(0.9, 0.9)),
         SizedBox(height: sh * 0.015),
         Text(
           'Semua Selesai!\n⏳ Menunggu lawan...',

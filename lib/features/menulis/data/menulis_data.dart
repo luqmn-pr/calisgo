@@ -7,13 +7,27 @@ import 'package:flutter/material.dart';
 class LetterStroke {
   final String character;
   final List<List<Offset>> strokes;
+  late final List<List<Offset>> checkpoints;
   final String displayLabel;
 
-  const LetterStroke({
+  LetterStroke({
     required this.character,
     required this.strokes,
     required this.displayLabel,
-  });
+  }) {
+    // Generate checkpoints automatically:
+    // This reduces the hit detection points to only the main anchor points 
+    // (start, middle segments, and end) while keeping the full strokes for visual smoothness.
+    checkpoints = strokes.map((stroke) {
+      if (stroke.length <= 3) return stroke;
+      return [
+        stroke.first,
+        stroke[(stroke.length * 0.33).floor()],
+        stroke[(stroke.length * 0.66).floor()],
+        stroke.last,
+      ];
+    }).toList();
+  }
 }
 
 class MenulisData {
@@ -21,7 +35,7 @@ class MenulisData {
 
   // ─── Angka 0-9 ────────────────────────────────────────────
   // Koordinat ternormalisasi [0,1] — akan di-scale ke canvas size
-  static const List<LetterStroke> angka = [
+  static final List<LetterStroke> angka = [
     LetterStroke(
       character: '0',
       displayLabel: '0',
@@ -137,7 +151,7 @@ class MenulisData {
   ];
 
   // ─── Huruf A-Z (subset, bisa diperluas) ──────────────────
-  static const List<LetterStroke> huruf = [
+  static final List<LetterStroke> huruf = [
     LetterStroke(
       character: 'A',
       displayLabel: 'A',

@@ -29,6 +29,17 @@ class KataModel {
   });
 }
 
+class KalimatModel {
+  final String kalimatUtuh;
+  final List<String> potonganKata;
+  final String emoji;
+
+  const KalimatModel({
+    required this.kalimatUtuh,
+    required this.potonganKata,
+    required this.emoji,
+  });
+}
 class MembacaData {
   MembacaData._();
 
@@ -75,5 +86,14 @@ class MembacaData {
     KataModel(kata: 'ROTI', sukuKata: ['RO', 'TI'], emoji: '🍞'),
     KataModel(kata: 'SUSU', sukuKata: ['SU', 'SU'], emoji: '🥛'),
     KataModel(kata: 'KUDA', sukuKata: ['KU', 'DA'], emoji: '🐴'),
+  ];
+
+  // Kalimat dengan kata terpisah untuk latihan menyusun gaya Duolingo
+  static const List<KalimatModel> kalimatLatihan = [
+    KalimatModel(kalimatUtuh: 'SAYA SUKA APEL', potonganKata: ['SAYA', 'SUKA', 'APEL'], emoji: '🍎'),
+    KalimatModel(kalimatUtuh: 'BUKU ITU BARU', potonganKata: ['BUKU', 'ITU', 'BARU'], emoji: '📚'),
+    KalimatModel(kalimatUtuh: 'MAMA BELI ROTI', potonganKata: ['MAMA', 'BELI', 'ROTI'], emoji: '🍞'),
+    KalimatModel(kalimatUtuh: 'SAPI ITU BESAR', potonganKata: ['SAPI', 'ITU', 'BESAR'], emoji: '🐄'),
+    KalimatModel(kalimatUtuh: 'ADIK MINUM SUSU', potonganKata: ['ADIK', 'MINUM', 'SUSU'], emoji: '🥛'),
   ];
 }

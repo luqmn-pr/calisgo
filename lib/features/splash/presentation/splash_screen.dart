@@ -64,7 +64,7 @@ class _SplashScreenState extends State<SplashScreen>
         children: [
           // ── Generated background image ─────────────────
           Image.asset(
-            'assets/images/splash_bg.png',
+            'assets/images/landing_bg.png',
             fit: BoxFit.cover,
           ),
 
@@ -80,6 +80,34 @@ class _SplashScreenState extends State<SplashScreen>
                 ],
               ),
             ),
+          ),
+
+          // ── Characters ─────────────────────────────────
+          Positioned(
+            left: -context.sw(20),
+            bottom: -context.sh(20),
+            child: Image.asset(
+              'assets/images/char_girl.png',
+              height: context.sh(350),
+              fit: BoxFit.contain,
+            ).animate(delay: 400.ms).fadeIn(duration: 800.ms).slideX(
+                  begin: -0.2,
+                  end: 0,
+                  curve: Curves.easeOutCubic,
+                ),
+          ),
+          Positioned(
+            right: -context.sw(20),
+            bottom: -context.sh(20),
+            child: Image.asset(
+              'assets/images/char_boy.png',
+              height: context.sh(350),
+              fit: BoxFit.contain,
+            ).animate(delay: 500.ms).fadeIn(duration: 800.ms).slideX(
+                  begin: 0.2,
+                  end: 0,
+                  curve: Curves.easeOutCubic,
+                ),
           ),
 
           // ── Floating sparkle decorations ───────────────

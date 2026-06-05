@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/audio/audio_provider.dart';
+import '../../../core/audio/audio_service.dart';
+import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/app_sizes.dart';
 import '../domain/berhitung_provider.dart';
@@ -28,19 +31,9 @@ class BerhitungScreen extends ConsumerWidget {
             child: Column(
               children: [
                 _TopBar(state: state, ref: ref),
+                _QuestionBanner(state: state),
                 Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: _ObjectsPanel(state: state),
-                      ),
-                      Expanded(
-                        flex: 4,
-                        child: _AnswerPanel(state: state, ref: ref),
-                      ),
-                    ],
-                  ),
+                  child: _DragDropWorkspace(state: state, ref: ref),
                 ),
               ],
             ),
@@ -77,7 +70,9 @@ class _TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _NavBtn(icon: Icons.arrow_back_ios_new_rounded, onTap: () => context.pop()),
+          _NavBtn(icon: Icons.arrow_back_ios_new_rounded, onTap: () {
+            context.pop();
+          }),
           SizedBox(width: context.sw(10)),
           Text('🔢', style: TextStyle(fontSize: context.sw(22))),
           SizedBox(width: context.sw(8)),
@@ -175,311 +170,249 @@ class _NavBtn extends StatelessWidget {
   }
 }
 
-class _ObjectsPanel extends StatelessWidget {
+class _QuestionBanner extends StatelessWidget {
   final BerhitungState state;
-  const _ObjectsPanel({required this.state});
+  const _QuestionBanner({required this.state});
 
   @override
   Widget build(BuildContext context) {
     final soal = state.currentSoal;
 
     return Padding(
-      padding: EdgeInsets.all(context.sw(20)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: context.sw(20),
-              vertical: context.sh(10),
+      padding: EdgeInsets.all(context.sw(16)),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: context.sw(24),
+          vertical: context.sh(12),
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.berhitungColor.withOpacity(0.25),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
             ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.berhitungColor.withOpacity(0.25),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Text(
-              soal.pertanyaan,
-              style: GoogleFonts.nunito(
-                fontSize: context.fs(18),
-                color: AppColors.berhitungColor,
-                fontWeight: FontWeight.w900,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          )
-              .animate(key: ValueKey(state.currentIndex))
-              .fadeIn()
-              .slideY(begin: -0.2, end: 0),
-
-          SizedBox(height: context.sh(18)),
-
-          soal.type == SoalType.menghitung
-              ? _CountingObjects(soal: soal, state: state)
-              : _OperationObjects(soal: soal, state: state),
-        ],
-      ),
+          ],
+        ),
+        child: Text(
+          soal.pertanyaan,
+          style: GoogleFonts.nunito(
+            fontSize: context.fs(22),
+            color: AppColors.berhitungColor,
+            fontWeight: FontWeight.w900,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ).animate(key: ValueKey(state.currentIndex)).fadeIn().slideY(begin: -0.2, end: 0),
     );
   }
 }
 
-class _CountingObjects extends StatelessWidget {
-  final BerhitungSoal soal;
-  final BerhitungState state;
-  const _CountingObjects({required this.soal, required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: context.sw(10),
-      runSpacing: context.sh(8),
-      children: List.generate(
-        soal.angkaA,
-        (i) => Text(soal.item.emoji,
-                style: TextStyle(fontSize: context.sw(44)))
-            .animate(
-              delay: Duration(milliseconds: 60 * i),
-              key: ValueKey('${state.currentIndex}_$i'),
-            )
-            .scale(
-              begin: const Offset(0, 0),
-              end: const Offset(1, 1),
-              curve: Curves.elasticOut,
-            ),
-      ),
-    );
-  }
-}
-
-class _OperationObjects extends StatelessWidget {
-  final BerhitungSoal soal;
-  final BerhitungState state;
-  const _OperationObjects({required this.soal, required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final operator = soal.type == SoalType.penjumlahan ? '+' : '-';
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _ObjectGroup(
-          emoji: soal.item.emoji,
-          count: soal.angkaA,
-          color: soal.item.color,
-          context: context,
-        ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: context.sw(16)),
-          child: Text(
-            operator,
-            style: GoogleFonts.nunito(
-              fontSize: context.fs(36),
-              color: AppColors.berhitungColor,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        _ObjectGroup(
-          emoji: soal.item.emoji,
-          count: soal.angkaB,
-          color: soal.type == SoalType.pengurangan
-              ? Colors.grey
-              : soal.item.color,
-          context: context,
-          dimmed: soal.type == SoalType.pengurangan,
-        ),
-      ],
-    );
-  }
-}
-
-class _ObjectGroup extends StatelessWidget {
-  final String emoji;
-  final int count;
-  final Color color;
-  final BuildContext context;
-  final bool dimmed;
-  const _ObjectGroup({
-    required this.emoji,
-    required this.count,
-    required this.color,
-    required this.context,
-    this.dimmed = false,
-  });
-
-  @override
-  Widget build(BuildContext _) {
-    return Column(
-      children: [
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 6,
-          runSpacing: 4,
-          children: List.generate(
-            count,
-            (i) => Text(
-              emoji,
-              style: TextStyle(
-                fontSize: context.sw(36),
-                color: dimmed ? Colors.grey.withOpacity(0.5) : null,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: context.sh(6)),
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: context.sw(14),
-            vertical: context.sh(4),
-          ),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            '$count',
-            style: GoogleFonts.nunito(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: context.fs(18),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AnswerPanel extends StatelessWidget {
+class _DragDropWorkspace extends StatelessWidget {
   final BerhitungState state;
   final WidgetRef ref;
-  const _AnswerPanel({required this.state, required this.ref});
+  const _DragDropWorkspace({required this.state, required this.ref});
 
   @override
   Widget build(BuildContext context) {
-    final choices = state.answerChoices;
+    final soal = state.currentSoal;
     final isAnswered = state.phase != BerhitungPhase.answering;
 
-    return Padding(
-      padding: EdgeInsets.all(context.sw(16)),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Pilih jawabannya! 👇',
-              style: GoogleFonts.nunito(
-                fontSize: context.fs(15),
-                color: AppColors.textDark,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: context.sh(8)),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            childAspectRatio: 2.2,
-            children: choices.map((choice) {
-              Color btnColor;
-              if (!isAnswered) {
-                btnColor = AppColors.berhitungColor;
-              } else if (choice == state.currentSoal.jawaban) {
-                btnColor = AppColors.correct;
-              } else if (choice == state.selectedAnswer) {
-                btnColor = AppColors.incorrect;
-              } else {
-                btnColor = Colors.grey.shade300;
-              }
-
-              return GestureDetector(
-                onTap: isAnswered
-                    ? null
-                    : () => ref
-                        .read(berhitungProvider.notifier)
-                        .selectAnswer(choice),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  decoration: BoxDecoration(
-                    color: btnColor,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: isAnswered
-                        ? []
-                        : [
-                            BoxShadow(
-                              color:
-                                  AppColors.berhitungColor.withOpacity(0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$choice',
-                      style: GoogleFonts.nunito(
-                        fontSize: context.fs(28),
-                        fontWeight: FontWeight.w900,
-                        color: isAnswered &&
-                                choice != state.currentSoal.jawaban
-                            ? Colors.grey.shade500
-                            : Colors.white,
+    return Column(
+      children: [
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // OUTSIDE AREA / TONG SAMPAH
+              Expanded(
+                child: DragTarget<String>(
+                  onAcceptWithDetails: (details) {
+                    if (details.data == 'inbox' && !isAnswered) {
+                      ref.read(berhitungProvider.notifier).moveObjectToOutside();
+                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+                    }
+                  },
+                  builder: (context, candidateData, rejectedData) {
+                    return Container(
+                      margin: EdgeInsets.all(context.sw(16)),
+                      decoration: BoxDecoration(
+                        color: candidateData.isNotEmpty 
+                          ? Colors.grey.withOpacity(0.3) 
+                          : Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.grey.withOpacity(0.8), width: 3, style: BorderStyle.solid),
                       ),
-                    ),
-                  ),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Luar Kotak',
+                              style: GoogleFonts.nunito(
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: state.objectsOutside > 0 
+                              ? Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: List.generate(
+                                    state.objectsOutside,
+                                    (i) => _buildDraggable(context, soal.item.emoji, 'outside', isAnswered),
+                                  ),
+                                )
+                              : Icon(Icons.delete_outline, size: 60, color: Colors.grey.shade400),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              );
-            }).toList(),
+              ),
+
+              // BOX AREA (Di Dalam Kotak)
+              Expanded(
+                child: DragTarget<String>(
+                  onAcceptWithDetails: (details) {
+                    if (details.data == 'outside' && !isAnswered) {
+                      ref.read(berhitungProvider.notifier).moveObjectToBox();
+                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+                    }
+                  },
+                  builder: (context, candidateData, rejectedData) {
+                    return Container(
+                      margin: EdgeInsets.all(context.sw(16)),
+                      decoration: BoxDecoration(
+                        color: candidateData.isNotEmpty 
+                          ? AppColors.berhitungColor.withOpacity(0.3) 
+                          : Colors.white.withOpacity(0.9),
+                        border: Border.all(color: AppColors.berhitungColor, width: 5),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.berhitungColor.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Di Dalam Kotak',
+                              style: GoogleFonts.nunito(
+                                color: AppColors.berhitungColor,
+                                fontWeight: FontWeight.w900,
+                                fontSize: context.fs(16),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Wrap(
+                                alignment: WrapAlignment.center,
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: List.generate(
+                                  state.objectsInBox,
+                                  (i) => _buildDraggable(context, soal.item.emoji, 'inbox', isAnswered),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: context.sh(14)),
-          if (isAnswered)
-            Column(
-              children: [
-                Text(
-                  state.phase == BerhitungPhase.correct
-                      ? '🎉 Benar! +10 poin'
-                      : '😅 Jawaban: ${state.currentSoal.jawaban}',
-                  style: GoogleFonts.nunito(
-                    fontSize: context.fs(15),
-                    color: state.phase == BerhitungPhase.correct
-                        ? AppColors.correct
-                        : AppColors.incorrect,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ).animate().fadeIn().scale(),
-                SizedBox(height: context.sh(10)),
-                ElevatedButton(
-                  onPressed: () =>
-                      ref.read(berhitungProvider.notifier).nextSoal(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.berhitungColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+        ),
+        
+        // CHECK ANSWER BUTTON & RESULT
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: context.sh(20)),
+          child: isAnswered 
+            ? Column(
+                children: [
+                  Text(
+                    state.phase == BerhitungPhase.correct
+                        ? '🎉 Benar! Jawaban adalah ${state.currentSoal.jawaban}'
+                        : '😅 Salah! Harusnya ada ${state.currentSoal.jawaban} di kotak',
+                    style: GoogleFonts.nunito(
+                      fontSize: context.fs(22),
+                      color: state.phase == BerhitungPhase.correct
+                          ? AppColors.correct
+                          : AppColors.incorrect,
+                      fontWeight: FontWeight.w900,
                     ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: context.sw(20),
-                      vertical: context.sh(8),
+                  ).animate().fadeIn().scale(),
+                  SizedBox(height: context.sh(14)),
+                  ElevatedButton(
+                    onPressed: () {
+                      ref.read(berhitungProvider.notifier).nextSoal();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.berhitungColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      padding: EdgeInsets.symmetric(horizontal: context.sw(30), vertical: context.sh(14)),
                     ),
+                    child: Text('Soal Berikutnya →', style: GoogleFonts.nunito(fontWeight: FontWeight.w900, fontSize: context.fs(18))),
                   ),
-                  child: Text(
-                    'Soal Berikutnya →',
-                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800),
-                  ),
+                ],
+              )
+            : ElevatedButton(
+                onPressed: () {
+                  final audio = ProviderScope.containerOf(context).read(audioServiceProvider);
+                  ref.read(berhitungProvider.notifier).checkAnswer();
+                  // Audio handled after checking phase
+                  final newState = ref.read(berhitungProvider);
+                  if (newState.phase == BerhitungPhase.correct) {
+                    audio.playSound(SoundType.correct);
+                  } else {
+                    audio.playSound(SoundType.incorrect);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.berhitungColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: EdgeInsets.symmetric(horizontal: context.sw(40), vertical: context.sh(16)),
+                  elevation: 6,
                 ),
-              ],
-            ),
-        ],
-      ),)
+                child: Text('Cek Jawaban', style: GoogleFonts.nunito(fontWeight: FontWeight.w900, fontSize: context.fs(20))),
+              ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildDraggable(BuildContext context, String emoji, String data, bool isAnswered) {
+    final emojiWidget = Text(emoji, style: TextStyle(fontSize: context.sw(40), decoration: TextDecoration.none));
     
+    if (isAnswered) {
+      return emojiWidget;
+    }
+
+    return Draggable<String>(
+      data: data,
+      feedback: Transform.scale(scale: 1.2, child: emojiWidget),
+      childWhenDragging: Opacity(opacity: 0.3, child: emojiWidget),
+      child: emojiWidget,
+    );
   }
 }
 
@@ -516,7 +449,13 @@ class _FinishedView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('🏆', style: TextStyle(fontSize: 64))
+                  Builder(builder: (ctx) {
+                    // Play celebration sound when finished view builds
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      ProviderScope.containerOf(ctx).read(audioServiceProvider).playSound(SoundType.celebration);
+                    });
+                    return const Text('🏆', style: TextStyle(fontSize: 64));
+                  })
                       .animate()
                       .scale(curve: Curves.elasticOut),
                   const SizedBox(height: 12),
@@ -549,8 +488,9 @@ class _FinishedView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ElevatedButton(
-                        onPressed: () =>
-                            ref.read(berhitungProvider.notifier).restart(),
+                        onPressed: () {
+                          ref.read(berhitungProvider.notifier).restart();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.berhitungColor,
                           foregroundColor: Colors.white,
@@ -559,7 +499,9 @@ class _FinishedView extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       ElevatedButton(
-                        onPressed: () => context.go('/'),
+                        onPressed: () {
+                          context.go('/');
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,

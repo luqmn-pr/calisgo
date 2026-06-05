@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../core/audio/audio_provider.dart';
+import '../../../core/audio/audio_service.dart';
+import '../../../core/audio/sound_generator.dart';
 import '../../../core/utils/app_sizes.dart';
+import '../../../shared/widgets/settings_dialog.dart';
 
-class LandingScreen extends StatefulWidget {
+class LandingScreen extends ConsumerStatefulWidget {
   const LandingScreen({super.key});
 
   @override
-  State<LandingScreen> createState() => _LandingScreenState();
+  ConsumerState<LandingScreen> createState() => _LandingScreenState();
 }
 
-class _LandingScreenState extends State<LandingScreen>
+class _LandingScreenState extends ConsumerState<LandingScreen>
     with TickerProviderStateMixin {
   late AnimationController _cloudController;
   late AnimationController _floatController;
@@ -37,6 +43,11 @@ class _LandingScreenState extends State<LandingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
+
+    // Start background music
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(audioServiceProvider).startBgm();
+    });
   }
 
   @override
@@ -309,7 +320,9 @@ class _LandingScreenState extends State<LandingScreen>
         );
       },
       child: GestureDetector(
-        onTap: () => context.go('/'),
+        onTap: () {
+          context.go('/');
+        },
         child:
             Container(
                   width: context.sw(92),
@@ -354,20 +367,29 @@ class _LandingScreenState extends State<LandingScreen>
           top: context.sh(14),
           left: context.sw(14),
           child: _CircleIconBtn(
-            icon: Icons.info_outline_rounded,
+            icon: Icons.settings_rounded,
             color: const Color(0xFF29B6F6),
             size: context.sw(42),
-            onTap: () {},
+            onTap: () {
+              SettingsDialog.show(context);
+            },
           ).animate(delay: 1000.ms).fadeIn().scale(),
         ),
         Positioned(
           top: context.sh(66),
           left: context.sw(14),
-          child: _CircleIconBtn(
-            icon: Icons.volume_up_rounded,
-            color: const Color(0xFFFF9800),
-            size: context.sw(42),
-            onTap: () {},
+          child: Consumer(
+            builder: (context, ref, _) {
+              final isMuted = ref.watch(audioSettingsProvider).isMuted;
+              return _CircleIconBtn(
+                icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                color: isMuted ? const Color(0xFF9E9E9E) : const Color(0xFFFF9800),
+                size: context.sw(42),
+                onTap: () {
+                  ref.read(audioSettingsProvider.notifier).toggleMute();
+                },
+              );
+            },
           ).animate(delay: 1100.ms).fadeIn().scale(),
         ),
         Positioned(
@@ -377,7 +399,28 @@ class _LandingScreenState extends State<LandingScreen>
             icon: Icons.close_rounded,
             color: const Color(0xFFEF5350),
             size: context.sw(42),
-            onTap: () {},
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  backgroundColor: const Color(0xFFFFF8E1),
+                  title: Text('👋 Keluar?', style: GoogleFonts.nunito(fontWeight: FontWeight.w900, fontSize: 22)),
+                  content: Text('Yakin ingin keluar dari Calistung?', style: GoogleFonts.nunito(fontWeight: FontWeight.w600, fontSize: 16)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: Text('Tidak', style: GoogleFonts.nunito(fontWeight: FontWeight.w800, color: const Color(0xFF29B6F6))),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => SystemNavigator.pop(),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF5350), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: Text('Ya, Keluar', style: GoogleFonts.nunito(fontWeight: FontWeight.w800)),
+                    ),
+                  ],
+                ),
+              );
+            },
           ).animate(delay: 1000.ms).fadeIn().scale(),
         ),
       ],

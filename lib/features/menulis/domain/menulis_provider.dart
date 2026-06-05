@@ -60,8 +60,8 @@ class MenulisState {
 
 // ─── Notifier ─────────────────────────────────────────────────
 class MenulisNotifier extends StateNotifier<MenulisState> {
-  static const double kProximityThreshold = 0.06; // 6% of canvas size
-  static const double kMinAccuracy = 0.60; // Minimum 60% match for children
+  static const double kProximityThreshold = 0.12; // 12% of canvas size (lebih toleran)
+  static const double kMinAccuracy = 0.50; // Minimum 50% match for children
 
   MenulisNotifier()
       : super(MenulisState(items: MenulisData.allItems));
@@ -85,7 +85,10 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
 
     final targetStroke =
         state.currentLetter.strokes[state.currentStrokeIndex];
-    final accuracy = _computeAccuracy(state.currentPath, targetStroke);
+    final targetCheckpoints =
+        state.currentLetter.checkpoints[state.currentStrokeIndex];
+    
+    final accuracy = _computeAccuracy(state.currentPath, targetCheckpoints, targetStroke);
 
     if (accuracy >= kMinAccuracy) {
       final completed = [...state.completedStrokes, state.currentPath];
@@ -154,22 +157,78 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
 
   // ─── Algoritma Akurasi ──────────────────────────────────
   // Menghitung proximity match antara user path dan target path
-  // Menggunakan sampling + minimum distance per target point
   double _computeAccuracy(
-      List<Offset> userPath, List<Offset> targetPath) {
-    if (userPath.isEmpty || targetPath.isEmpty) return 0.0;
+      List<Offset> userPath, List<Offset> targetCheckpoints, List<Offset> fullTargetStroke) {
+    if (userPath.isEmpty || targetCheckpoints.isEmpty) return 0.0;
 
-    int matchedPoints = 0;
-    for (final targetPt in targetPath) {
-      double minDist = double.infinity;
-      for (final userPt in userPath) {
-        final d = _distance(targetPt, userPt);
-        if (d < minDist) minDist = d;
+    int userIndex = 0;
+
+    // 1. Cek Checkpoints (Wajib mengenai SEMUA titik utama secara berurutan)
+    // Ini akan menggagalkan coretan yang berhenti di tengah jalan (seperti gambar 1, 2, 4)
+    for (final targetPt in targetCheckpoints) {
+      bool matched = false;
+      for (int i = userIndex; i < userPath.length; i++) {
+        final d = _distance(targetPt, userPath[i]);
+        if (d <= kProximityThreshold) {
+          matched = true;
+          userIndex = i; // Simpan index agar berurutan
+          break;
+        }
       }
-      if (minDist <= kProximityThreshold) matchedPoints++;
+      if (!matched) return 0.0; // Jika ada 1 titik saja yang terlewat, langsung gagal
     }
 
-    return matchedPoints / targetPath.length;
+    // 2. Anti-Hook / Anti-Trailing Scribble (Wajib berhenti di dekat titik akhir)
+    // Ini akan menggagalkan coretan tambahan di akhir (seperti gambar 3)
+    final lastTargetPt = fullTargetStroke.last;
+    final lastUserPt = userPath.last;
+    if (_distance(lastUserPt, lastTargetPt) > kProximityThreshold * 1.5) {
+      return 0.0; // Titik akhir coretan terlalu jauh dari ujung huruf asli
+    }
+
+    // 3. Anti-Wandering (Jarak titik pengguna ke SEGMENT GARIS target tidak boleh jauh)
+    for (final userPt in userPath) {
+      double minD = double.infinity;
+      // Hitung jarak terdekat dari userPt ke semua segmen garis di fullTargetStroke
+      for (int i = 0; i < fullTargetStroke.length - 1; i++) {
+        final d = _distanceToSegment(userPt, fullTargetStroke[i], fullTargetStroke[i+1]);
+        if (d < minD) minD = d;
+      }
+      // Batas toleransi diperketat menjadi 1.2x (sekitar 14% layar)
+      if (minD > kProximityThreshold * 1.2) {
+        return 0.0; 
+      }
+    }
+
+    // 4. Anti-Scribble (Cek panjang total coretan)
+    double targetLen = _pathLength(fullTargetStroke);
+    double userLen = _pathLength(userPath);
+    
+    // Coretan tidak boleh melampaui 1.8x panjang garis aslinya
+    if (targetLen > 0 && userLen > targetLen * 1.8) {
+      return 0.0; 
+    }
+
+    // Jika lolos semua validasi ketat ini, berarti coretan sangat akurat!
+    return 1.0;
+  }
+
+  // Jarak terpendek dari titik p ke segmen garis v-w
+  double _distanceToSegment(Offset p, Offset v, Offset w) {
+    final l2 = pow(v.dx - w.dx, 2) + pow(v.dy - w.dy, 2);
+    if (l2 == 0) return _distance(p, v);
+    double t = ((p.dx - v.dx) * (w.dx - v.dx) + (p.dy - v.dy) * (w.dy - v.dy)) / l2;
+    t = t.clamp(0.0, 1.0);
+    final projection = Offset(v.dx + t * (w.dx - v.dx), v.dy + t * (w.dy - v.dy));
+    return _distance(p, projection);
+  }
+
+  double _pathLength(List<Offset> path) {
+    double len = 0;
+    for (int i = 1; i < path.length; i++) {
+      len += _distance(path[i-1], path[i]);
+    }
+    return len;
   }
 
   double _distance(Offset a, Offset b) {
