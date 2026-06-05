@@ -1,204 +1,152 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/competitive_questions.dart';
 
-// ─── Team Model ───────────────────────────────────────────────
+// ─── Enums ────────────────────────────────────────────────────
 enum TeamId { blue, red }
 
+/// Fase permainan — countdown, 3 fase aktif, dan selesai.
+/// Setiap tim bisa berada di fase yang berbeda (salah satu bisa maju lebih cepat).
+/// `state.phase` = fase global yang sedang di-timer.
+enum GamePhase { countdown, membaca, menulis, berhitung, finished }
+
+// ─── Per-Team State ───────────────────────────────────────────
 class TeamState {
   final TeamId id;
-  final int score;
-  final int correctCount;
-  final int incorrectCount;
+  final int totalScore;
+
+  /// Fase aktif tim saat ini — bisa berbeda dengan global phase
+  final GamePhase activePhase;
+
+  /// Soal ke-berapa di dalam [activePhase] (0-indexed, max 4)
+  final int questionIndex;
+
+  // Statistik per fase (untuk tabel hasil)
+  final int membacaCorrect;
+  final int menulisCorrect;
+  final int berhitungCorrect;
+
   final String lastFeedback;
-  final bool isCorrect;
+  final bool lastIsCorrect;
 
   const TeamState({
     required this.id,
-    this.score = 0,
-    this.correctCount = 0,
-    this.incorrectCount = 0,
+    this.totalScore = 0,
+    this.activePhase = GamePhase.membaca,
+    this.questionIndex = 0,
+    this.membacaCorrect = 0,
+    this.menulisCorrect = 0,
+    this.berhitungCorrect = 0,
     this.lastFeedback = '',
-    this.isCorrect = false,
+    this.lastIsCorrect = false,
   });
 
   TeamState copyWith({
-    int? score,
-    int? correctCount,
-    int? incorrectCount,
+    int? totalScore,
+    GamePhase? activePhase,
+    int? questionIndex,
+    int? membacaCorrect,
+    int? menulisCorrect,
+    int? berhitungCorrect,
     String? lastFeedback,
-    bool? isCorrect,
+    bool? lastIsCorrect,
   }) =>
       TeamState(
         id: id,
-        score: score ?? this.score,
-        correctCount: correctCount ?? this.correctCount,
-        incorrectCount: incorrectCount ?? this.incorrectCount,
+        totalScore: totalScore ?? this.totalScore,
+        activePhase: activePhase ?? this.activePhase,
+        questionIndex: questionIndex ?? this.questionIndex,
+        membacaCorrect: membacaCorrect ?? this.membacaCorrect,
+        menulisCorrect: menulisCorrect ?? this.menulisCorrect,
+        berhitungCorrect: berhitungCorrect ?? this.berhitungCorrect,
         lastFeedback: lastFeedback ?? this.lastFeedback,
-        isCorrect: isCorrect ?? this.isCorrect,
+        lastIsCorrect: lastIsCorrect ?? this.lastIsCorrect,
       );
 }
 
-// ─── Soal Kompetisi ───────────────────────────────────────────
-class CompetitiveSoal {
-  final String question;
-  final int answer;
-  final List<int> choices;
-  final String emoji;
-
-  const CompetitiveSoal({
-    required this.question,
-    required this.answer,
-    required this.choices,
-    required this.emoji,
-  });
-}
-
-List<CompetitiveSoal> _generateSoal() {
-  return [
-    CompetitiveSoal(
-      question: '2 + 3 = ?', answer: 5,
-      choices: [3, 4, 5, 6], emoji: '⭐',
-    ),
-    CompetitiveSoal(
-      question: '4 - 1 = ?', answer: 3,
-      choices: [2, 3, 4, 5], emoji: '🍎',
-    ),
-    CompetitiveSoal(
-      question: '1 + 1 = ?', answer: 2,
-      choices: [1, 2, 3, 4], emoji: '🎈',
-    ),
-    CompetitiveSoal(
-      question: '5 - 3 = ?', answer: 2,
-      choices: [1, 2, 3, 4], emoji: '🌸',
-    ),
-    CompetitiveSoal(
-      question: '3 + 2 = ?', answer: 5,
-      choices: [4, 5, 6, 7], emoji: '🍭',
-    ),
-    CompetitiveSoal(
-      question: '4 + 1 = ?', answer: 5,
-      choices: [3, 4, 5, 6], emoji: '🚀',
-    ),
-    CompetitiveSoal(
-      question: '6 - 2 = ?', answer: 4,
-      choices: [3, 4, 5, 6], emoji: '🎵',
-    ),
-    CompetitiveSoal(
-      question: '2 + 2 = ?', answer: 4,
-      choices: [2, 3, 4, 5], emoji: '🌈',
-    ),
-    CompetitiveSoal(
-      question: '5 - 1 = ?', answer: 4,
-      choices: [3, 4, 5, 6], emoji: '🏆',
-    ),
-    CompetitiveSoal(
-      question: '3 + 3 = ?', answer: 6,
-      choices: [4, 5, 6, 7], emoji: '⚡',
-    ),
-  ];
-}
-
-// ─── Competitive State ────────────────────────────────────────
-enum GamePhase { countdown, playing, finished }
-
+// ─── Global Game State ────────────────────────────────────────
 class CompetitiveState {
-  final TeamState blueTeam;
-  final TeamState redTeam;
-  final List<CompetitiveSoal> soalList;
-  final int blueIndex;
-  final int redIndex;
+  /// Fase global = fase yang sedang di-timer (min dari kedua tim)
   final GamePhase phase;
-  final int timeLeft; // seconds
   final int countdownValue;
 
+  /// Timer per fase: 60 detik
+  final int timeLeft;
+
+  final TeamState blueTeam;
+  final TeamState redTeam;
+
+  final List<MembacaChallenge> membacaQ;
+  final List<MenulisChallenge> menulisQ;
+  final List<BerhitungChallenge> berhitungQ;
+
   const CompetitiveState({
+    this.phase = GamePhase.countdown,
+    this.countdownValue = 3,
+    this.timeLeft = 60,
     required this.blueTeam,
     required this.redTeam,
-    this.soalList = const [],
-    this.blueIndex = 0,
-    this.redIndex = 0,
-    this.phase = GamePhase.countdown,
-    this.timeLeft = 60,
-    this.countdownValue = 3,
+    this.membacaQ = const [],
+    this.menulisQ = const [],
+    this.berhitungQ = const [],
   });
 
-  CompetitiveSoal get blueSoal => soalList[blueIndex % soalList.length];
-  CompetitiveSoal get redSoal => soalList[redIndex % soalList.length];
-
   CompetitiveState copyWith({
+    GamePhase? phase,
+    int? countdownValue,
+    int? timeLeft,
     TeamState? blueTeam,
     TeamState? redTeam,
-    int? blueIndex,
-    int? redIndex,
-    GamePhase? phase,
-    int? timeLeft,
-    int? countdownValue,
   }) =>
       CompetitiveState(
+        phase: phase ?? this.phase,
+        countdownValue: countdownValue ?? this.countdownValue,
+        timeLeft: timeLeft ?? this.timeLeft,
         blueTeam: blueTeam ?? this.blueTeam,
         redTeam: redTeam ?? this.redTeam,
-        soalList: soalList,
-        blueIndex: blueIndex ?? this.blueIndex,
-        redIndex: redIndex ?? this.redIndex,
-        phase: phase ?? this.phase,
-        timeLeft: timeLeft ?? this.timeLeft,
-        countdownValue: countdownValue ?? this.countdownValue,
+        membacaQ: membacaQ,
+        menulisQ: menulisQ,
+        berhitungQ: berhitungQ,
       );
 
+  // ─── Current challenge helpers ─────────────────────────────
+  CompetitiveChallenge currentChallengeFor(TeamState team) {
+    final qi = team.questionIndex.clamp(0, 4);
+    switch (team.activePhase) {
+      case GamePhase.membaca:
+        return membacaQ[qi.clamp(0, membacaQ.length - 1)];
+      case GamePhase.menulis:
+        return menulisQ[qi.clamp(0, menulisQ.length - 1)];
+      case GamePhase.berhitung:
+        return berhitungQ[qi.clamp(0, berhitungQ.length - 1)];
+      default:
+        return membacaQ[0]; // fallback
+    }
+  }
+
+  // ─── Winner ────────────────────────────────────────────────
   TeamId? get winner {
     if (phase != GamePhase.finished) return null;
-    if (blueTeam.score > redTeam.score) return TeamId.blue;
-    if (redTeam.score > blueTeam.score) return TeamId.red;
-    return null; // draw
+    if (blueTeam.totalScore > redTeam.totalScore) return TeamId.blue;
+    if (redTeam.totalScore > blueTeam.totalScore) return TeamId.red;
+    return null; // seri
   }
 }
 
 // ─── Notifier ─────────────────────────────────────────────────
 class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
+  static const int kQuestionsPerPhase = 5;
+  static const int kTimerSeconds = 60;
+
   CompetitiveNotifier()
       : super(CompetitiveState(
           blueTeam: const TeamState(id: TeamId.blue),
           redTeam: const TeamState(id: TeamId.red),
-          soalList: _generateSoal(),
+          membacaQ: CompetitiveQuestions.membacaList..shuffle(),
+          menulisQ: CompetitiveQuestions.menulisList..shuffle(),
+          berhitungQ: CompetitiveQuestions.berhitungList..shuffle(),
         ));
 
-  void answerBlue(int answer) {
-    if (state.phase != GamePhase.playing) return;
-    final correct = answer == state.blueSoal.answer;
-    state = state.copyWith(
-      blueTeam: state.blueTeam.copyWith(
-        score: correct ? state.blueTeam.score + 10 : state.blueTeam.score,
-        correctCount: correct
-            ? state.blueTeam.correctCount + 1
-            : state.blueTeam.correctCount,
-        incorrectCount: correct
-            ? state.blueTeam.incorrectCount
-            : state.blueTeam.incorrectCount + 1,
-        lastFeedback: correct ? '🎉 Benar!' : '😅 Salah!',
-        isCorrect: correct,
-      ),
-      blueIndex: state.blueIndex + 1,
-    );
-  }
-
-  void answerRed(int answer) {
-    if (state.phase != GamePhase.playing) return;
-    final correct = answer == state.redSoal.answer;
-    state = state.copyWith(
-      redTeam: state.redTeam.copyWith(
-        score: correct ? state.redTeam.score + 10 : state.redTeam.score,
-        correctCount: correct
-            ? state.redTeam.correctCount + 1
-            : state.redTeam.correctCount,
-        incorrectCount: correct
-            ? state.redTeam.incorrectCount
-            : state.redTeam.incorrectCount + 1,
-        lastFeedback: correct ? '🎉 Benar!' : '😅 Salah!',
-        isCorrect: correct,
-      ),
-      redIndex: state.redIndex + 1,
-    );
-  }
-
+  // ─── Countdown ──────────────────────────────────────────────
   void startCountdown() {
     state = state.copyWith(phase: GamePhase.countdown, countdownValue: 3);
   }
@@ -207,23 +155,183 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     if (state.countdownValue > 1) {
       state = state.copyWith(countdownValue: state.countdownValue - 1);
     } else {
-      state = state.copyWith(phase: GamePhase.playing);
+      state = state.copyWith(phase: GamePhase.membaca, timeLeft: kTimerSeconds);
     }
   }
 
+  // ─── Game Timer ──────────────────────────────────────────────
   void tickTimer() {
+    if (state.phase == GamePhase.countdown || state.phase == GamePhase.finished) {
+      return;
+    }
     if (state.timeLeft > 1) {
       state = state.copyWith(timeLeft: state.timeLeft - 1);
     } else {
-      state = state.copyWith(timeLeft: 0, phase: GamePhase.finished);
+      _onTimerExpired();
     }
   }
 
+  void _onTimerExpired() {
+    // Paksa tim yang masih di fase global saat ini untuk pindah fase
+    TeamState newBlue = state.blueTeam;
+    TeamState newRed = state.redTeam;
+
+    if (state.blueTeam.activePhase == state.phase) {
+      newBlue = _forceAdvance(state.blueTeam);
+    }
+    if (state.redTeam.activePhase == state.phase) {
+      newRed = _forceAdvance(state.redTeam);
+    }
+
+    final nextGlobal = _nextPhase(state.phase);
+    if (nextGlobal == GamePhase.finished) {
+      state = state.copyWith(
+        phase: GamePhase.finished,
+        blueTeam: newBlue,
+        redTeam: newRed,
+      );
+    } else {
+      state = state.copyWith(
+        phase: nextGlobal,
+        timeLeft: kTimerSeconds,
+        blueTeam: newBlue,
+        redTeam: newRed,
+      );
+    }
+  }
+
+  /// Paksa tim maju (saat waktu habis, tanpa mendapat poin soal ini)
+  TeamState _forceAdvance(TeamState team) {
+    final next = _nextPhase(team.activePhase);
+    return team.copyWith(
+      activePhase: next,
+      questionIndex: 0,
+      lastFeedback: '⏰ Waktu Habis!',
+      lastIsCorrect: false,
+    );
+  }
+
+  // ─── Complete Challenge (selalu dipanggil saat benar) ────────
+  void completeBlue() => _completeForTeam(isBlue: true);
+  void completeRed() => _completeForTeam(isBlue: false);
+
+  void _completeForTeam({required bool isBlue}) {
+    final team = isBlue ? state.blueTeam : state.redTeam;
+
+    // Guard: jika tim sudah selesai semua fase
+    if (team.activePhase == GamePhase.finished) return;
+
+    // ── Hitung score ──────────────────────────────────────────
+    // Base: 10 poin per soal
+    // Bonus kecepatan: max 10 poin extra (proporsional sisa waktu)
+    final timeBonus = (state.timeLeft / kTimerSeconds * 10).round();
+    final scoreGain = 10 + timeBonus;
+
+    // ── Update statistik per fase ─────────────────────────────
+    final newMembacaC = team.activePhase == GamePhase.membaca
+        ? team.membacaCorrect + 1 : team.membacaCorrect;
+    final newMenulisC = team.activePhase == GamePhase.menulis
+        ? team.menulisCorrect + 1 : team.menulisCorrect;
+    final newBerhitungC = team.activePhase == GamePhase.berhitung
+        ? team.berhitungCorrect + 1 : team.berhitungCorrect;
+
+    // ── Cek apakah fase ini selesai (5 soal) ─────────────────
+    final newQIndex = team.questionIndex + 1;
+    final isPhaseComplete = newQIndex >= kQuestionsPerPhase;
+
+    TeamState newTeam;
+
+    if (isPhaseComplete) {
+      // Bonus menyelesaikan fase lebih cepat dari timer
+      final phaseBonus = (state.timeLeft / kTimerSeconds * 15).round();
+      final nextPhase = _nextPhase(team.activePhase);
+
+      final feedback = phaseBonus > 0
+          ? '✅ Fase Selesai! ⚡ +$phaseBonus bonus!'
+          : '✅ Fase Selesai!';
+
+      newTeam = TeamState(
+        id: team.id,
+        totalScore: team.totalScore + scoreGain + phaseBonus,
+        activePhase: nextPhase,
+        questionIndex: 0,
+        membacaCorrect: newMembacaC,
+        menulisCorrect: newMenulisC,
+        berhitungCorrect: newBerhitungC,
+        lastFeedback: feedback,
+        lastIsCorrect: true,
+      );
+    } else {
+      final feedback = timeBonus > 0
+          ? '🎉 Benar! ⚡ +$timeBonus'
+          : '🎉 Benar!';
+
+      newTeam = team.copyWith(
+        totalScore: team.totalScore + scoreGain,
+        questionIndex: newQIndex,
+        membacaCorrect: newMembacaC,
+        menulisCorrect: newMenulisC,
+        berhitungCorrect: newBerhitungC,
+        lastFeedback: feedback,
+        lastIsCorrect: true,
+      );
+    }
+
+    final newBlue = isBlue ? newTeam : state.blueTeam;
+    final newRed = isBlue ? state.redTeam : newTeam;
+
+    // ── Cek apakah global phase harus maju ───────────────────
+    // Keduanya sudah melewati fase global saat ini?
+    GamePhase newGlobalPhase = state.phase;
+    int newTimeLeft = state.timeLeft;
+
+    if (state.phase != GamePhase.countdown && state.phase != GamePhase.finished) {
+      final blueAhead = _phaseOrder(newBlue.activePhase) > _phaseOrder(state.phase);
+      final redAhead = _phaseOrder(newRed.activePhase) > _phaseOrder(state.phase);
+      if (blueAhead && redAhead) {
+        final next = _nextPhase(state.phase);
+        newGlobalPhase = next;
+        newTimeLeft = next == GamePhase.finished ? state.timeLeft : kTimerSeconds;
+      }
+    }
+
+    state = state.copyWith(
+      phase: newGlobalPhase,
+      timeLeft: newTimeLeft,
+      blueTeam: newBlue,
+      redTeam: newRed,
+    );
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────
+  GamePhase _nextPhase(GamePhase p) {
+    switch (p) {
+      case GamePhase.countdown: return GamePhase.membaca;
+      case GamePhase.membaca: return GamePhase.menulis;
+      case GamePhase.menulis: return GamePhase.berhitung;
+      case GamePhase.berhitung: return GamePhase.finished;
+      case GamePhase.finished: return GamePhase.finished;
+    }
+  }
+
+  int _phaseOrder(GamePhase p) {
+    switch (p) {
+      case GamePhase.countdown: return 0;
+      case GamePhase.membaca: return 1;
+      case GamePhase.menulis: return 2;
+      case GamePhase.berhitung: return 3;
+      case GamePhase.finished: return 4;
+    }
+  }
+
+  // ─── Restart ─────────────────────────────────────────────────
   void restart() {
     state = CompetitiveState(
       blueTeam: const TeamState(id: TeamId.blue),
       redTeam: const TeamState(id: TeamId.red),
-      soalList: _generateSoal()..shuffle(),
+      membacaQ: CompetitiveQuestions.membacaList..shuffle(),
+      menulisQ: CompetitiveQuestions.menulisList..shuffle(),
+      berhitungQ: CompetitiveQuestions.berhitungList..shuffle(),
     );
   }
 }
