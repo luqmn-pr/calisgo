@@ -1,4 +1,6 @@
 import 'dart:ui';
+import '../../berhitung/data/berhitung_data.dart';
+import '../../membaca/data/membaca_data.dart';
 
 enum ChallengeType { membaca, menulis, berhitung }
 
@@ -63,14 +65,15 @@ class BerhitungChallenge extends CompetitiveChallenge {
 class CompetitiveQuestions {
   CompetitiveQuestions._();
 
-  /// 5 soal membaca — susun suku kata
-  static List<MembacaChallenge> get membacaList => [
-        const MembacaChallenge(kata: 'BOLA', emoji: '⚽', sukuKata: ['BO', 'LA']),
-        const MembacaChallenge(kata: 'SAPI', emoji: '🐄', sukuKata: ['SA', 'PI']),
-        const MembacaChallenge(kata: 'BUKU', emoji: '📚', sukuKata: ['BU', 'KU']),
-        const MembacaChallenge(kata: 'TOPI', emoji: '🎩', sukuKata: ['TO', 'PI']),
-        const MembacaChallenge(kata: 'MEJA', emoji: '🪑', sukuKata: ['ME', 'JA']),
-      ];
+  /// 25 soal membaca — map dari MembacaData
+  static List<MembacaChallenge> get membacaList =>
+      MembacaData.kataLatihan
+          .map((kata) => MembacaChallenge(
+                kata: kata.kata,
+                emoji: kata.emoji,
+                sukuKata: kata.sukuKata,
+              ))
+          .toList();
 
   /// 5 soal menulis — gambar karakter, cek key-points
   static List<MenulisChallenge> get menulisList => [
@@ -123,27 +126,15 @@ class CompetitiveQuestions {
         ),
       ];
 
-  /// 5 soal berhitung — drag emoji ke kotak
-  static List<BerhitungChallenge> get berhitungList => [
-        const BerhitungChallenge(
-          emoji: '🍎', itemName: 'apel',
-          targetCount: 3, question: 'Seret 3 apel ke kotak!', totalSpawned: 6,
-        ),
-        const BerhitungChallenge(
-          emoji: '⭐', itemName: 'bintang',
-          targetCount: 2, question: 'Seret 2 bintang ke kotak!', totalSpawned: 5,
-        ),
-        const BerhitungChallenge(
-          emoji: '🎈', itemName: 'balon',
-          targetCount: 4, question: 'Seret 4 balon ke kotak!', totalSpawned: 7,
-        ),
-        const BerhitungChallenge(
-          emoji: '🍭', itemName: 'permen',
-          targetCount: 3, question: 'Seret 3 permen ke kotak!', totalSpawned: 6,
-        ),
-        const BerhitungChallenge(
-          emoji: '🐟', itemName: 'ikan',
-          targetCount: 2, question: 'Seret 2 ikan ke kotak!', totalSpawned: 5,
-        ),
-      ];
+  /// 25 soal berhitung — map dari BerhitungData
+  static List<BerhitungChallenge> get berhitungList =>
+      BerhitungData.generateSoalList()
+          .map((soal) => BerhitungChallenge(
+                emoji: soal.item.emoji,
+                itemName: soal.item.nama,
+                targetCount: soal.jawaban,
+                question: soal.pertanyaan,
+                totalSpawned: soal.jawaban + 3,
+              ))
+          .toList();
 }

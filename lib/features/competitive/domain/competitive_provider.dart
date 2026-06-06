@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/database/battle_database.dart';
 import '../data/competitive_questions.dart';
 
 // ─── Enums ────────────────────────────────────────────────────
@@ -11,6 +12,7 @@ enum GamePhase { countdown, membaca, menulis, berhitung, finished }
 // ─── Per-Team State ───────────────────────────────────────────
 class TeamState {
   final TeamId id;
+  final String teamName;
   final int totalScore;
 
   /// Fase aktif tim saat ini
@@ -32,6 +34,7 @@ class TeamState {
 
   const TeamState({
     required this.id,
+    this.teamName = '',
     this.totalScore = 0,
     this.activePhase = GamePhase.membaca,
     this.questionIndex = 0,
@@ -44,6 +47,7 @@ class TeamState {
   });
 
   TeamState copyWith({
+    String? teamName,
     int? totalScore,
     GamePhase? activePhase,
     int? questionIndex,
@@ -56,6 +60,7 @@ class TeamState {
   }) =>
       TeamState(
         id: id,
+        teamName: teamName ?? this.teamName,
         totalScore: totalScore ?? this.totalScore,
         activePhase: activePhase ?? this.activePhase,
         questionIndex: questionIndex ?? this.questionIndex,
@@ -146,6 +151,13 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
         ));
 
   // ─── Countdown ──────────────────────────────────────────────
+  void setTeamNames(String blue, String red) {
+    state = state.copyWith(
+      blueTeam: state.blueTeam.copyWith(teamName: blue),
+      redTeam: state.redTeam.copyWith(teamName: red),
+    );
+  }
+
   void startCountdown() {
     state = state.copyWith(phase: GamePhase.countdown, countdownValue: 3);
   }
@@ -173,6 +185,10 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
     GamePhase newGlobalPhase = state.phase;
     if (newBlue.activePhase == GamePhase.finished && newRed.activePhase == GamePhase.finished) {
       newGlobalPhase = GamePhase.finished;
+    }
+
+    if (newGlobalPhase == GamePhase.finished && state.phase != GamePhase.finished) {
+      _saveResult(newBlue, newRed);
     }
 
     state = state.copyWith(
@@ -243,8 +259,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
           ? '✅ Fase Selesai! ⚡ +$phaseBonus bonus!'
           : '✅ Fase Selesai!';
 
-      newTeam = TeamState(
-        id: team.id,
+      newTeam = team.copyWith(
         totalScore: team.totalScore + scoreGain + phaseBonus,
         activePhase: nextPhase,
         questionIndex: 0,
@@ -280,11 +295,26 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
       newGlobalPhase = GamePhase.finished;
     }
 
+    if (newGlobalPhase == GamePhase.finished && state.phase != GamePhase.finished) {
+      _saveResult(newBlue, newRed);
+    }
+
     state = state.copyWith(
       phase: newGlobalPhase,
       blueTeam: newBlue,
       redTeam: newRed,
     );
+  }
+
+  void _saveResult(TeamState b, TeamState r) {
+    final res = BattleResult(
+      date: DateTime.now().toIso8601String(),
+      blueName: b.teamName,
+      redName: r.teamName,
+      blueScore: b.totalScore,
+      redScore: r.totalScore,
+    );
+    BattleDatabase.saveResult(res);
   }
 
   // ─── Helpers ─────────────────────────────────────────────────
@@ -300,9 +330,12 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
 
   // ─── Restart ─────────────────────────────────────────────────
   void restart() {
+    final bName = state.blueTeam.teamName;
+    final rName = state.redTeam.teamName;
+
     state = CompetitiveState(
-      blueTeam: const TeamState(id: TeamId.blue, timeLeft: kTimerSeconds),
-      redTeam: const TeamState(id: TeamId.red, timeLeft: kTimerSeconds),
+      blueTeam: TeamState(id: TeamId.blue, teamName: bName, timeLeft: kTimerSeconds),
+      redTeam: TeamState(id: TeamId.red, teamName: rName, timeLeft: kTimerSeconds),
       membacaQ: CompetitiveQuestions.membacaList..shuffle(),
       menulisQ: CompetitiveQuestions.menulisList..shuffle(),
       berhitungQ: CompetitiveQuestions.berhitungList..shuffle(),

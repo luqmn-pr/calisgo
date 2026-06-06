@@ -38,9 +38,20 @@ class _CompetitiveScreenState extends ConsumerState<CompetitiveScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Selalu reset state agar tidak stuck di 'finished' saat masuk dari menu
+      ref.read(competitiveProvider.notifier).restart();
       ref.read(competitiveProvider.notifier).startCountdown();
       _startCountdown();
     });
+  }
+
+  /// Restart penuh: reset provider + hidupkan ulang timer di screen
+  void _doRestart() {
+    _countdownTimer?.cancel();
+    _gameTimer?.cancel();
+    ref.read(competitiveProvider.notifier).restart();
+    ref.read(competitiveProvider.notifier).startCountdown();
+    _startCountdown();
   }
 
   void _startCountdown() {
@@ -98,7 +109,7 @@ class _CompetitiveScreenState extends ConsumerState<CompetitiveScreen> {
               if (state.phase == GamePhase.countdown)
                 _CountdownOverlay(value: state.countdownValue, sw: sw, sh: sh),
               if (state.phase == GamePhase.finished)
-                _ResultOverlay(state: state, ref: ref, sw: sw, sh: sh),
+                _ResultOverlay(state: state, ref: ref, sw: sw, sh: sh, onRestart: _doRestart),
             ],
           );
         },
@@ -380,7 +391,7 @@ class _TeamHeader extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            isBlue ? '🔵 Tim Biru' : '🔴 Tim Merah',
+            isBlue ? '🔵 ${team.teamName}' : '🔴 ${team.teamName}',
             style: TextStyle(
               color: teamColor,
               fontWeight: FontWeight.w900,
@@ -822,12 +833,14 @@ class _ResultOverlay extends StatelessWidget {
   final CompetitiveState state;
   final WidgetRef ref;
   final double sw, sh;
+  final VoidCallback onRestart;
 
   const _ResultOverlay({
     required this.state,
     required this.ref,
     required this.sw,
     required this.sh,
+    required this.onRestart,
   });
 
   @override
@@ -865,8 +878,8 @@ class _ResultOverlay extends StatelessWidget {
                   isDraw
                       ? '🤝 Seri!'
                       : (winner == TeamId.blue
-                            ? '🔵 Tim Biru Menang!'
-                            : '🔴 Tim Merah Menang!'),
+                            ? '🔵 ${state.blueTeam.teamName} Menang!'
+                            : '🔴 ${state.redTeam.teamName} Menang!'),
                   style: TextStyle(
                     fontSize: (sh * 0.04).clamp(16.0, 26.0),
                     fontWeight: FontWeight.w900,
@@ -885,14 +898,7 @@ class _ResultOverlay extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton.icon(
-                      onPressed: () {
-                        ref.read(competitiveProvider.notifier).restart();
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          ref
-                              .read(competitiveProvider.notifier)
-                              .startCountdown();
-                        });
-                      },
+                      onPressed: onRestart,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -961,7 +967,7 @@ class _PhaseScoreTable extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '🔵 Tim Biru',
+                '🔵 ${state.blueTeam.teamName}',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _Colors.teamBlue,
@@ -980,7 +986,7 @@ class _PhaseScoreTable extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                '🔴 Tim Merah',
+                '🔴 ${state.redTeam.teamName}',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _Colors.teamRed,
