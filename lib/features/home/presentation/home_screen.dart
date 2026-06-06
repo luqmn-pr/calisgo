@@ -9,6 +9,7 @@ import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/app_sizes.dart';
 import '../../../shared/widgets/settings_dialog.dart';
+import '../../competitive/domain/competitive_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +20,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _floatController;
-  late AnimationController _rainbowController;
 
   @override
   void initState() {
@@ -28,16 +28,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
-    _rainbowController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
   }
 
   @override
   void dispose() {
     _floatController.dispose();
-    _rainbowController.dispose();
     super.dispose();
   }
 
@@ -132,31 +127,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           Positioned(
             top: context.sh(14),
             right: context.sw(14),
-            child: GestureDetector(
-              onTap: () {
-                SettingsDialog.show(context);
-              },
-              child: Container(
-                width: context.sw(42),
-                height: context.sw(42),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF29B6F6),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF29B6F6).withOpacity(0.5),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    context.push('/leaderboard');
+                  },
+                  child: Container(
+                    width: context.sw(42),
+                    height: context.sw(42),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFFFB300),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFFB300).withValues(alpha: 0.5),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.settings_rounded,
-                  color: Colors.white,
-                  size: context.sw(22),
-                ),
-              ),
-            ).animate(delay: 900.ms).fadeIn().scale(),
+                    child: Icon(
+                      Icons.emoji_events_rounded,
+                      color: Colors.white,
+                      size: context.sw(22),
+                    ),
+                  ),
+                ).animate(delay: 850.ms).fadeIn().scale(),
+                SizedBox(width: context.sw(12)),
+                GestureDetector(
+                  onTap: () {
+                    SettingsDialog.show(context);
+                  },
+                  child: Container(
+                    width: context.sw(42),
+                    height: context.sw(42),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF29B6F6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF29B6F6).withValues(alpha: 0.5),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.settings_rounded,
+                      color: Colors.white,
+                      size: context.sw(22),
+                    ),
+                  ),
+                ).animate(delay: 900.ms).fadeIn().scale(),
+              ],
+            ),
           ),
         ],
       ),
@@ -382,7 +407,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
 }
 
 // ─── Module Card ─────────────────────────────────────────────────
-class _ModuleCard extends StatefulWidget {
+class _ModuleCard extends ConsumerStatefulWidget {
   final String emoji;
   final String title;
   final String subtitle;
@@ -406,10 +431,10 @@ class _ModuleCard extends StatefulWidget {
   });
 
   @override
-  State<_ModuleCard> createState() => _ModuleCardState();
+  ConsumerState<_ModuleCard> createState() => _ModuleCardState();
 }
 
-class _ModuleCardState extends State<_ModuleCard>
+class _ModuleCardState extends ConsumerState<_ModuleCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _pressController;
   late Animation<double> _scaleAnim;
@@ -450,7 +475,11 @@ class _ModuleCardState extends State<_ModuleCard>
           onTapUp: (_) {
             setState(() => _pressed = false);
             _pressController.reverse();
-            context.push(widget.route);
+            if (widget.route == '/competitive') {
+              _showTeamNameDialog(context);
+            } else {
+              context.push(widget.route);
+            }
           },
           onTapCancel: () {
             setState(() => _pressed = false);
@@ -605,6 +634,74 @@ class _ModuleCardState extends State<_ModuleCard>
               .slideY(begin: 0.4, end: 0, curve: Curves.easeOut),
         ),
       ),
+    );
+  }
+
+  void _showTeamNameDialog(BuildContext context) {
+    final blueCtrl = TextEditingController(text: 'Tim Biru');
+    final redCtrl = TextEditingController(text: 'Tim Merah');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Nama Tim',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.nunito(fontWeight: FontWeight.w900),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: blueCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Tim Kiri (Biru)',
+                  labelStyle: TextStyle(color: AppColors.teamBlue),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.person, color: AppColors.teamBlue),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: redCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Tim Kanan (Merah)',
+                  labelStyle: TextStyle(color: AppColors.teamRed),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.person, color: AppColors.teamRed),
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.competitiveColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                ref.read(competitiveProvider.notifier).setTeamNames(
+                      blueCtrl.text.isEmpty ? 'Tim Biru' : blueCtrl.text,
+                      redCtrl.text.isEmpty ? 'Tim Merah' : redCtrl.text,
+                    );
+                context.push(widget.route);
+              },
+              child: Text(
+                'Mulai Pertarungan!',
+                style: GoogleFonts.nunito(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
