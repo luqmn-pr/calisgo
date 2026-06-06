@@ -3,11 +3,7 @@ import '../../domain/menulis_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 
 /// CustomPainter untuk tracing canvas
-/// Menggambar:
-/// 1. Ghost path (target stroke) — garis putus-putus abu
-/// 2. Start indicator (dot hijau di titik awal)
-/// 3. Completed strokes (hijau solid)
-/// 4. Current user path (biru / warna aktif)
+/// Menggunakan gaya penulisan seperti di halaman "Bertarung" (Competitive).
 class TracingPainter extends CustomPainter {
   final MenulisState state;
   final Size size;
@@ -16,13 +12,30 @@ class TracingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size canvasSize) {
+    _drawBackgroundCharacter(canvas, canvasSize);
     _drawGhostPaths(canvas, canvasSize);
     _drawCompletedStrokes(canvas, canvasSize);
     _drawCurrentPath(canvas, canvasSize);
-    _drawStartDot(canvas, canvasSize);
+    _drawCheckpoints(canvas, canvasSize);
   }
 
-  // ─── 1. Ghost (target) paths ────────────────────────────
+  // ─── 1. Karakter Latar (Transparan) ─────────────────────────
+  void _drawBackgroundCharacter(Canvas canvas, Size size) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: state.currentLetter.character,
+        style: TextStyle(
+          fontSize: size.height * 0.75,
+          color: AppColors.menulisColor.withValues(alpha: 0.06),
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset((size.width - tp.width) / 2, (size.height - tp.height) / 2));
+  }
+
+  // ─── 2. Ghost paths (Garis putus-putus panduan) ─────────────
   void _drawGhostPaths(Canvas canvas, Size size) {
     final letter = state.currentLetter;
 
@@ -31,18 +44,14 @@ class TracingPainter extends CustomPainter {
       if (!isCurrentOrFuture) continue;
 
       final stroke = letter.strokes[si];
-      final isCurrent = si == state.currentStrokeIndex;
 
       final paint = Paint()
-        ..color = isCurrent
-            ? Colors.grey.withOpacity(0.5)
-            : Colors.grey.withOpacity(0.25)
-        ..strokeWidth = isCurrent ? 24.0 : 18.0
+        ..color = AppColors.menulisColor.withValues(alpha: 0.3)
+        ..strokeWidth = 10.0 // Dibuat lebih tebal
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..style = PaintingStyle.stroke;
 
-      // Dashed effect
       final path = Path();
       final points = stroke.map((o) => _scale(o, size)).toList();
       path.moveTo(points.first.dx, points.first.dy);
@@ -50,14 +59,13 @@ class TracingPainter extends CustomPainter {
         path.lineTo(points[i].dx, points[i].dy);
       }
 
-      // Draw as dashed
       _drawDashedPath(canvas, path, paint);
     }
   }
 
   void _drawDashedPath(Canvas canvas, Path path, Paint paint) {
-    const dashLength = 16.0;
-    const gapLength = 10.0;
+    const dashLength = 8.0;
+    const gapLength = 6.0;
 
     final metrics = path.computeMetrics();
     for (final metric in metrics) {
@@ -78,11 +86,128 @@ class TracingPainter extends CustomPainter {
     }
   }
 
-  // ─── 2. Completed strokes ──────────────────────────────
+  // ─── 3. Titik Kunci (Checkpoints dengan Nomor) ──────────────
+  void _drawCheckpoints(Canvas canvas, Size size) {
+    final letter = state.currentLetter;
+    if (state.currentStrokeIndex >= letter.strokes.length) return;
+
+    final checkpoints = letter.checkpoints[state.currentStrokeIndex];
+    if (checkpoints.isEmpty) return;
+
+    for (int i = 0; i < checkpoints.length; i++) {
+      final pos = _scale(checkpoints[i], size);
+      final r = size.width * 0.05; // radius relatif terhadap kanvas
+      
+      // Determine if this checkpoint has been passed by the user
+      // For simplicity in UI, we just check distance from drawn path to this checkpoint
+      bool isHit = false;
+      const hitRadius = 30.0;
+      for (final pt in state.currentPath) {
+        final scaledPt = _scale(pt, size);
+        if ((scaledPt - pos).distance < hitRadius) {
+          isHit = true;
+          break;
+        }
+      }
+
+      // If tracing is complete or stroke is complete, mark all hit
+      if (state.phase == TracingPhase.complete) isHit = true;
+
+      // Find next target index
+      int nextTargetIndex = 0;
+      for (int j = 0; j < checkpoints.length; j++) {
+        bool hitJ = false;
+        final kp = _scale(checkpoints[j], size);
+        for (final pt in state.currentPath) {
+          if ((_scale(pt, size) - kp).distance < hitRadius) {
+            hitJ = true;
+            break;
+          }
+        }
+        if (!hitJ) {
+          nextTargetIndex = j;
+          break;
+        }
+        if (j == checkpoints.length - 1) nextTargetIndex = checkpoints.length;
+      }
+
+      // Sembunyikan titik akhir pada huruf O atau angka 0 (loop tertutup)
+      // jika jaraknya berdekatan dengan titik awal dan user belum mencapai titik ke-3 (index 2).
+      if (i == checkpoints.length - 1 && i >= 2) {
+        final dist = (checkpoints.last - checkpoints.first).distance;
+        if (dist < 0.15) { // 15% dari kanvas (cukup dekat)
+          if (nextTargetIndex < 2) {
+            continue; // Jangan gambar titik ini dulu
+          }
+        }
+      }
+
+      // Shadow
+      canvas.drawCircle(
+        pos + const Offset(2, 3),
+        r,
+        Paint()..color = Colors.black.withValues(alpha: 0.15),
+      );
+
+      // Fill
+      canvas.drawCircle(
+        pos,
+        r,
+        Paint()
+          ..color = isHit
+              ? Colors.green
+              : (i == nextTargetIndex
+                  ? AppColors.menulisColor
+                  : Colors.white.withValues(alpha: 0.9))
+          ..style = PaintingStyle.fill,
+      );
+
+      // Border
+      canvas.drawCircle(
+        pos,
+        r,
+        Paint()
+          ..color = isHit ? Colors.green : AppColors.menulisColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0,
+      );
+
+      // Nomor
+      final numPainter = TextPainter(
+        text: TextSpan(
+          text: '${i + 1}',
+          style: TextStyle(
+            fontSize: r * 1.1,
+            fontWeight: FontWeight.w900,
+            color: isHit ? Colors.white : (i == nextTargetIndex ? Colors.white : AppColors.menulisColor),
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      numPainter.paint(
+        canvas,
+        pos - Offset(numPainter.width / 2, numPainter.height / 2),
+      );
+
+      // Pulse ring untuk titik berikutnya
+      if (i == nextTargetIndex && state.phase == TracingPhase.tracing) {
+        canvas.drawCircle(
+          pos,
+          r + 5,
+          Paint()
+            ..color = AppColors.menulisColor.withValues(alpha: 0.22)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2,
+        );
+      }
+    }
+  }
+
+  // ─── 4. Completed strokes ──────────────────────────────
   void _drawCompletedStrokes(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.correct.withOpacity(0.85)
-      ..strokeWidth = 22.0
+      ..color = AppColors.correct.withValues(alpha: 0.85)
+      ..strokeWidth = 18.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
@@ -98,7 +223,7 @@ class TracingPainter extends CustomPainter {
     }
   }
 
-  // ─── 3. Current user path ──────────────────────────────
+  // ─── 5. Current user path ──────────────────────────────
   void _drawCurrentPath(Canvas canvas, Size size) {
     if (state.currentPath.isEmpty) return;
 
@@ -109,12 +234,12 @@ class TracingPainter extends CustomPainter {
     } else if (phase == TracingPhase.complete) {
       pathColor = AppColors.correct;
     } else {
-      pathColor = AppColors.primary;
+      pathColor = AppColors.menulisColor;
     }
 
     final paint = Paint()
-      ..color = pathColor
-      ..strokeWidth = 20.0
+      ..color = pathColor.withValues(alpha: 0.85)
+      ..strokeWidth = 18.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
@@ -126,57 +251,6 @@ class TracingPainter extends CustomPainter {
       path.lineTo(points[i].dx, points[i].dy);
     }
     canvas.drawPath(path, paint);
-
-    // Pen tip dot
-    final tipPaint = Paint()
-      ..color = pathColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(points.last, 12, tipPaint);
-  }
-
-  // ─── 4. Start dot ──────────────────────────────────────
-  void _drawStartDot(Canvas canvas, Size size) {
-    final letter = state.currentLetter;
-    if (state.currentStrokeIndex >= letter.strokes.length) return;
-
-    final stroke = letter.strokes[state.currentStrokeIndex];
-    if (stroke.isEmpty) return;
-
-    final startPoint = _scale(stroke.first, size);
-
-    // Outer ring
-    canvas.drawCircle(
-      startPoint,
-      18,
-      Paint()
-        ..color = AppColors.menulisColor.withOpacity(0.3)
-        ..style = PaintingStyle.fill,
-    );
-    // Inner dot
-    canvas.drawCircle(
-      startPoint,
-      10,
-      Paint()
-        ..color = AppColors.menulisColor
-        ..style = PaintingStyle.fill,
-    );
-
-    // Label "Mulai"
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: 'Mulai',
-        style: TextStyle(
-          color: AppColors.menulisColor,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    textPainter.paint(
-      canvas,
-      Offset(startPoint.dx - textPainter.width / 2, startPoint.dy + 22),
-    );
   }
 
   Offset _scale(Offset normalized, Size size) {

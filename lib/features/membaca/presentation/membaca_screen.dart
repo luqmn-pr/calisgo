@@ -13,6 +13,7 @@ import '../../../core/audio/tts_service.dart';
 import '../../../core/audio/tts_provider.dart';
 import '../data/membaca_data.dart';
 import '../domain/membaca_provider.dart';
+import 'widgets/membaca_drag_game.dart';
 
 class MembacaScreen extends ConsumerWidget {
   const MembacaScreen({super.key});
@@ -26,9 +27,17 @@ class MembacaScreen extends ConsumerWidget {
         fit: StackFit.expand,
         children: [
           // Background
-          Image.asset('assets/images/module_bg.png', fit: BoxFit.cover),
           Container(
-            color: AppColors.membacaColor.withOpacity(0.15),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.membacaColor.withOpacity(0.25),
+                  AppColors.membacaColor.withOpacity(0.05),
+                ],
+              ),
+            ),
           ),
 
           SafeArea(
@@ -50,6 +59,67 @@ class MembacaScreen extends ConsumerWidget {
               ],
             ),
           ),
+
+          // Status Feedback Overlay (Root Level for perfect centering)
+          if (state.isCorrect || state.isError)
+            Align(
+              alignment: Alignment.center,
+              child: Builder(builder: (context) {
+                if (state.isCorrect) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.correct);
+                    String textToSpeak = '';
+                    if (state.mode == MembacaMode.huruf) {
+                      textToSpeak = MembacaData.hurufAZ[state.currentIndex].huruf;
+                    } else if (state.mode == MembacaMode.kata) {
+                      textToSpeak = MembacaData.kataLatihan[state.currentIndex].kata;
+                    } else if (state.mode == MembacaMode.kalimat) {
+                      textToSpeak = MembacaData.kalimatLatihan[state.currentIndex].kalimatUtuh;
+                    }
+                    ProviderScope.containerOf(context).read(ttsServiceProvider).speak(textToSpeak);
+                  });
+                } else {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.incorrect);
+                  });
+                }
+                return Container(
+                  color: Colors.black.withOpacity(0.3),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      (state.isCorrect
+                          ? ColorFiltered(
+                              colorFilter: ColorFilter.mode(AppColors.correct, BlendMode.srcIn),
+                              child: const Text('✔️', style: TextStyle(fontSize: 120)),
+                            )
+                          : const Text('❌', style: TextStyle(fontSize: 120)))
+                          .animate()
+                          .scale(curve: Curves.elasticOut)
+                          .then(delay: state.isError ? 0.ms : null)
+                          .shake(hz: state.isError ? 4 : 0),
+                      SizedBox(height: context.sh(16)),
+                      Text(
+                        state.isCorrect ? 'Hebat!' : 'Salah',
+                        style: GoogleFonts.nunito(
+                          fontSize: context.fs(36),
+                          color: state.isCorrect ? AppColors.correct : Colors.red,
+                          fontWeight: FontWeight.w900,
+                          shadows: [
+                            Shadow(
+                              color: Colors.white.withOpacity(0.8),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
         ],
       ),
     );
@@ -57,46 +127,48 @@ class MembacaScreen extends ConsumerWidget {
 
   Widget _buildTopBar(
       BuildContext context, WidgetRef ref, MembacaState state) {
-    return Container(
+    return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: context.sw(16),
-        vertical: context.sh(8),
+        horizontal: context.sw(20),
+        vertical: context.sh(16),
       ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.membacaColor, const Color(0xFFE64A19)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.membacaColor.withOpacity(0.5),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          _NavBtn(
-            icon: Icons.arrow_back_ios_new_rounded,
-            onTap: () {
-              ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
-              context.pop();
-            },
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
+                      context.pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.membacaColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.membacaColor.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
+                    ),
+                  ),
+                  SizedBox(width: context.sw(20)),
+                  Text('📖', style: TextStyle(fontSize: context.sw(40))),
+                  SizedBox(width: context.sw(8)),
+                ],
+              ),
+              _ScoreChip(score: state.score, color: AppColors.membacaColor),
+            ],
           ),
-          SizedBox(width: context.sw(12)),
-          Text('📖', style: TextStyle(fontSize: context.sw(24))),
-          SizedBox(width: context.sw(8)),
-          Text(
-            'Membaca',
-            style: GoogleFonts.nunito(
-              fontSize: context.fs(18),
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-            ),
-          ),
-          const Spacer(),
           _ModeToggle(
             currentMode: state.mode,
             onChanged: (m) {
@@ -104,8 +176,6 @@ class MembacaScreen extends ConsumerWidget {
               ref.read(membacaProvider.notifier).setMode(m);
             },
           ),
-          SizedBox(width: context.sw(12)),
-          _ScoreChip(score: state.score, color: AppColors.membacaColor),
         ],
       ),
     );
@@ -122,10 +192,18 @@ class _ModeToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           _ToggleChip(
             label: 'Huruf',
@@ -172,7 +250,7 @@ class _ToggleChip extends StatelessWidget {
           vertical: context.sh(5),
         ),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
+          color: isActive ? AppColors.membacaColor : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -182,7 +260,7 @@ class _ToggleChip extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.nunito(
-                color: isActive ? AppColors.membacaColor : Colors.white,
+                color: isActive ? Colors.white : AppColors.membacaColor,
                 fontWeight: FontWeight.w700,
                 fontSize: context.fs(13),
               ),
@@ -203,25 +281,26 @@ class _ScoreChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: context.sw(14),
-        vertical: context.sh(6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 12,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('⭐', style: TextStyle(fontSize: 16)),
-          SizedBox(width: context.sw(6)),
+          const Text('⭐', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 8),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
@@ -231,7 +310,7 @@ class _ScoreChip extends StatelessWidget {
               style: GoogleFonts.nunito(
                 color: color,
                 fontWeight: FontWeight.w900,
-                fontSize: context.fs(16),
+                fontSize: 24,
               ),
             ),
           ),
@@ -331,8 +410,8 @@ class _HurufCard extends StatelessWidget {
         ref.read(membacaProvider.notifier).toggleAnswer();
       },
       child: Container(
-        width: context.sw(170),
-        height: context.sh(180),
+        width: context.sw(210),
+        height: context.sh(240),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(context.sw(24)),
@@ -350,7 +429,7 @@ class _HurufCard extends StatelessWidget {
             Text(
               huruf.huruf,
               style: GoogleFonts.nunito(
-                fontSize: context.fs(80),
+                fontSize: context.fs(110),
                 fontWeight: FontWeight.w900,
                 color: AppColors.membacaColor,
                 height: 1,
@@ -359,7 +438,7 @@ class _HurufCard extends StatelessWidget {
             Text(
               huruf.hurufKecil,
               style: GoogleFonts.nunito(
-                fontSize: context.fs(40),
+                fontSize: context.fs(50),
                 fontWeight: FontWeight.w700,
                 color: AppColors.textMedium,
                 height: 1,
@@ -403,38 +482,34 @@ class _ContohCard extends StatelessWidget {
         ProviderScope.containerOf(context).read(ttsServiceProvider).speak(huruf.contohKata);
       },
       child: Container(
-        width: context.sw(150),
-        height: context.sh(175),
+        width: context.sw(200),
+        height: context.sh(230),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.membacaColor.withOpacity(0.12),
-              AppColors.membacaColor.withOpacity(0.04),
-            ],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(context.sw(20)),
-          border: Border.all(
-            color: AppColors.membacaColor.withOpacity(0.3),
-            width: 2,
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.membacaColor.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(huruf.emoji,
-                style: TextStyle(fontSize: context.sw(56))),
-            SizedBox(height: context.sh(8)),
+                style: TextStyle(fontSize: context.sw(75))),
+            SizedBox(height: context.sh(12)),
             Text(
               huruf.contohKata,
               style: GoogleFonts.nunito(
-                fontSize: context.fs(20),
+                fontSize: context.fs(26),
                 color: AppColors.textDark,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            SizedBox(height: context.sh(4)),
+            SizedBox(height: context.sh(6)),
             RichText(
               text: TextSpan(children: [
                 TextSpan(
@@ -442,14 +517,14 @@ class _ContohCard extends StatelessWidget {
                   style: GoogleFonts.nunito(
                     color: AppColors.membacaColor,
                     fontWeight: FontWeight.w900,
-                    fontSize: context.fs(14),
+                    fontSize: context.fs(18),
                   ),
                 ),
                 TextSpan(
                   text: huruf.contohKata.substring(1).toLowerCase(),
                   style: GoogleFonts.nunito(
                     color: AppColors.textMedium,
-                    fontSize: context.fs(14),
+                    fontSize: context.fs(18),
                   ),
                 ),
               ]),
@@ -471,19 +546,20 @@ class _ArrowBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: context.sw(8)),
-        padding: EdgeInsets.all(context.sw(12)),
+        margin: EdgeInsets.symmetric(horizontal: context.sw(12)),
+        padding: EdgeInsets.all(context.sw(16)),
         decoration: BoxDecoration(
           color: AppColors.membacaColor.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: AppColors.membacaColor.withOpacity(0.3),
+            width: 2,
           ),
         ),
         child: Icon(
           icon,
           color: AppColors.membacaColor,
-          size: context.sw(28),
+          size: context.sw(64),
         ),
       ),
     );
@@ -502,173 +578,45 @@ class _KataView extends StatelessWidget {
 
     return Stack(
       children: [
-        Center(
+        Transform.translate(
+          offset: Offset(0, context.sh(-20)),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                kata.emoji,
-                style: TextStyle(fontSize: context.sw(64)),
-              )
-                  .animate(key: ValueKey(state.currentIndex))
-                  .scale(
-                    begin: const Offset(0, 0),
-                    end: const Offset(1, 1),
-                    curve: Curves.elasticOut,
-                  ),
-
-              SizedBox(height: context.sh(10)),
-
-              Text(
-                'Susun suku kata berikut!',
-                style: GoogleFonts.nunito(
-                  fontSize: context.fs(16),
-                  color: AppColors.textMedium,
-                  fontWeight: FontWeight.w700,
+            Text(
+              kata.emoji,
+              style: TextStyle(fontSize: context.sw(48)),
+            ).animate(key: ValueKey(state.currentIndex)).scale(
+                  begin: const Offset(0, 0),
+                  end: const Offset(1, 1),
+                  curve: Curves.elasticOut,
                 ),
+            SizedBox(height: context.sh(10)),
+            Text(
+              'Susun suku kata berikut!',
+              style: GoogleFonts.nunito(
+                fontSize: context.fs(16),
+                color: AppColors.textMedium,
+                fontWeight: FontWeight.w700,
               ),
-
-              SizedBox(height: context.sh(16)),
-
-              // Drop zone
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(kata.sukuKata.length, (i) {
-                  return _DropSlot(
-                    content: i < state.arrangedSukuKata.length
-                        ? state.arrangedSukuKata[i]
-                        : null,
-                    isCorrect: state.isCorrect,
-                    onRemove: i < state.arrangedSukuKata.length
-                        ? () => ref
-                            .read(membacaProvider.notifier)
-                            .removeSukuKata(state.arrangedSukuKata[i])
-                        : null,
-                  );
-                }),
+            ),
+            SizedBox(height: context.sh(16)),
+            Expanded(
+              child: MembacaGameWidget(
+                correctSequence: kata.sukuKata,
+                shuffledPieces: state.shuffledSukuKata,
+                currentIndex: state.currentIndex,
+                audioService: ProviderScope.containerOf(context, listen: false).read(audioServiceProvider),
+                onAnswerSubmitted: (isCorrect) {
+                  ref.read(membacaProvider.notifier).submitAnswer(isCorrect);
+                },
               ),
-
-              SizedBox(height: context.sh(20)),
-
-              // Source suku kata
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: state.shuffledSukuKata.map((suku) {
-                  final totalInSource =
-                      kata.sukuKata.where((s) => s == suku).length;
-                  final usedCount =
-                      state.arrangedSukuKata.where((s) => s == suku).length;
-                  final used = usedCount >= totalInSource;
-                  return Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: context.sw(8)),
-                    child: GestureDetector(
-                      onTap: used
-                          ? null
-                          : () => ref
-                              .read(membacaProvider.notifier)
-                              .pickSukuKata(suku),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: context.sw(20),
-                          vertical: context.sh(10),
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              used ? Colors.grey.shade300 : AppColors.membacaColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: used
-                              ? []
-                              : [
-                                  BoxShadow(
-                                    color: AppColors.membacaColor.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                        ),
-                        child: Text(
-                          suku,
-                          style: GoogleFonts.nunito(
-                            color: used ? Colors.grey.shade500 : Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: context.fs(20),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              SizedBox(height: context.sh(16)),
-
-              if (state.isCorrect || state.isError)
-                Builder(builder: (context) {
-                  if (state.isCorrect) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.correct);
-                      ProviderScope.containerOf(context).read(ttsServiceProvider).speak(kata.kata);
-                    });
-                  } else {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.incorrect);
-                    });
-                  }
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(state.isCorrect ? '🎉' : '❌', style: const TextStyle(fontSize: 40))
-                          .animate()
-                          .scale(curve: Curves.elasticOut)
-                          .then(delay: state.isError ? 0.ms : null)
-                          .shake(hz: state.isError ? 4 : 0),
-                      Text(
-                        state.isCorrect ? 'Hebat!' : 'Salah',
-                        style: GoogleFonts.nunito(
-                          fontSize: context.fs(20),
-                          color: state.isCorrect ? AppColors.correct : Colors.red,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-            ],
-          ),
+            ),
+          ],
         ),
-        // Next button at bottom right
-        if (state.isCorrect)
-          Positioned(
-            bottom: context.sh(24),
-            right: context.sw(16),
-            child: ElevatedButton(
-              onPressed: () {
-                ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
-                ref.read(membacaProvider.notifier).nextKata();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.membacaColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: context.sw(16), vertical: context.sh(12)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    'Berikutnya',
-                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800, fontSize: context.fs(16)),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_rounded, size: 20),
-                ],
-              ),
-            ).animate().scale(curve: Curves.elasticOut),
-          ),
+      ),
+        
+
+          
         // Dot progress
         Positioned(
           bottom: context.sh(12),
@@ -680,8 +628,7 @@ class _KataView extends StatelessWidget {
               MembacaData.kataLatihan.length,
               (i) => AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                margin:
-                    EdgeInsets.symmetric(horizontal: context.sw(3)),
+                margin: EdgeInsets.symmetric(horizontal: context.sw(3)),
                 width: i == state.currentIndex ? 18 : 7,
                 height: 7,
                 decoration: BoxDecoration(
@@ -699,61 +646,6 @@ class _KataView extends StatelessWidget {
   }
 }
 
-class _DropSlot extends StatelessWidget {
-  final String? content;
-  final bool isCorrect;
-  final VoidCallback? onRemove;
-  const _DropSlot({this.content, required this.isCorrect, this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onRemove,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: EdgeInsets.symmetric(horizontal: context.sw(8)),
-        width: context.sw(90),
-        height: context.sh(60),
-        decoration: BoxDecoration(
-          color: content != null
-              ? (isCorrect ? AppColors.correct : AppColors.primary)
-              : Colors.white.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: content != null
-                ? Colors.transparent
-                : AppColors.membacaColor.withOpacity(0.4),
-            width: 2,
-          ),
-          boxShadow: content != null
-              ? [
-                  BoxShadow(
-                    color:
-                        (isCorrect ? AppColors.correct : AppColors.primary)
-                            .withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : [],
-        ),
-        child: Center(
-          child: Text(
-            content ?? '?',
-            style: GoogleFonts.nunito(
-              color: content != null
-                  ? Colors.white
-                  : AppColors.membacaColor.withOpacity(0.4),
-              fontWeight: FontWeight.w900,
-              fontSize: context.fs(22),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ─── Kalimat View ────────────────────────────────────────────────
 class _KalimatView extends StatelessWidget {
   final MembacaState state;
@@ -766,186 +658,54 @@ class _KalimatView extends StatelessWidget {
 
     return Stack(
       children: [
-        Center(
+        Transform.translate(
+          offset: Offset(0, context.sh(-20)),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                kalimat.emoji,
-                style: TextStyle(fontSize: context.sw(64)),
-              )
-                  .animate(key: ValueKey(state.currentIndex))
-                  .scale(
-                    begin: const Offset(0, 0),
-                    end: const Offset(1, 1),
-                    curve: Curves.elasticOut,
+            Text(
+              kalimat.emoji,
+              style: TextStyle(fontSize: context.sw(48)),
+            ).animate(key: ValueKey(state.currentIndex)).scale(
+                  begin: const Offset(0, 0),
+                  end: const Offset(1, 1),
+                  curve: Curves.elasticOut,
+                ),
+            SizedBox(height: context.sh(6)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Susun kata menjadi kalimat!',
+                  style: GoogleFonts.nunito(
+                    fontSize: context.fs(16),
+                    color: AppColors.textMedium,
+                    fontWeight: FontWeight.w700,
                   ),
-
-              SizedBox(height: context.sh(6)),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Susun kata menjadi kalimat!',
-                    style: GoogleFonts.nunito(
-                      fontSize: context.fs(16),
-                      color: AppColors.textMedium,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.volume_up_rounded, color: AppColors.membacaColor),
-                    onPressed: () {
-                      ProviderScope.containerOf(context).read(ttsServiceProvider).speak(kalimat.kalimatUtuh);
-                    },
-                  ),
-                ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.volume_up_rounded, color: AppColors.membacaColor),
+                  onPressed: () {
+                    ProviderScope.containerOf(context, listen: false).read(ttsServiceProvider).speak(kalimat.kalimatUtuh);
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: context.sh(10)),
+            Expanded(
+              child: MembacaGameWidget(
+                correctSequence: kalimat.potonganKata,
+                shuffledPieces: state.shuffledSukuKata,
+                currentIndex: state.currentIndex,
+                audioService: ProviderScope.containerOf(context, listen: false).read(audioServiceProvider),
+                onAnswerSubmitted: (isCorrect) {
+                  ref.read(membacaProvider.notifier).submitAnswer(isCorrect);
+                },
               ),
-
-              SizedBox(height: context.sh(10)),
-
-              // Drop zone
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: context.sw(8),
-                runSpacing: context.sh(8),
-                children: List.generate(kalimat.potonganKata.length, (i) {
-                  return _DropSlot(
-                    content: i < state.arrangedSukuKata.length
-                        ? state.arrangedSukuKata[i]
-                        : null,
-                    isCorrect: state.isCorrect,
-                    onRemove: i < state.arrangedSukuKata.length
-                        ? () => ref
-                            .read(membacaProvider.notifier)
-                            .removeSukuKata(state.arrangedSukuKata[i])
-                        : null,
-                  );
-                }),
-              ),
-
-              SizedBox(height: context.sh(12)),
-
-              // Source kata
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: context.sw(8),
-                runSpacing: context.sh(8),
-                children: state.shuffledSukuKata.map((kataSource) {
-                  final totalInSource =
-                      kalimat.potonganKata.where((s) => s == kataSource).length;
-                  final usedCount =
-                      state.arrangedSukuKata.where((s) => s == kataSource).length;
-                  final used = usedCount >= totalInSource;
-                  
-                  return GestureDetector(
-                    onTap: used
-                        ? null
-                        : () => ref
-                            .read(membacaProvider.notifier)
-                            .pickSukuKata(kataSource),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: context.sw(20),
-                        vertical: context.sh(10),
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            used ? Colors.grey.shade300 : AppColors.membacaColor,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: used
-                            ? []
-                            : [
-                                BoxShadow(
-                                  color: AppColors.membacaColor.withOpacity(0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                      ),
-                      child: Text(
-                        kataSource,
-                        style: GoogleFonts.nunito(
-                          color: used ? Colors.grey.shade500 : Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: context.fs(20),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              SizedBox(height: context.sh(10)),
-
-              if (state.isCorrect || state.isError)
-                Builder(builder: (context) {
-                  if (state.isCorrect) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.correct);
-                      ProviderScope.containerOf(context).read(ttsServiceProvider).speak(kalimat.kalimatUtuh);
-                    });
-                  } else {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.incorrect);
-                    });
-                  }
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(state.isCorrect ? '🎉' : '❌', style: const TextStyle(fontSize: 40))
-                          .animate()
-                          .scale(curve: Curves.elasticOut)
-                          .then(delay: state.isError ? 0.ms : null)
-                          .shake(hz: state.isError ? 4 : 0),
-                      Text(
-                        state.isCorrect ? 'Hebat!' : 'Salah',
-                        style: GoogleFonts.nunito(
-                          fontSize: context.fs(20),
-                          color: state.isCorrect ? AppColors.correct : Colors.red,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  );
-                }),
+            ),
             ],
           ),
         ),
-        // Next button at bottom right
-        if (state.isCorrect)
-          Positioned(
-            bottom: context.sh(24),
-            right: context.sw(16),
-            child: ElevatedButton(
-              onPressed: () {
-                ProviderScope.containerOf(context).read(audioServiceProvider).playSound(SoundType.tap);
-                ref.read(membacaProvider.notifier).nextKata();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.membacaColor,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: context.sw(16), vertical: context.sh(12)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    'Berikutnya',
-                    style: GoogleFonts.nunito(fontWeight: FontWeight.w800, fontSize: context.fs(16)),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_rounded, size: 20),
-                ],
-              ),
-            ).animate().scale(curve: Curves.elasticOut),
-          ),
-        // Dot progress
+          
         Positioned(
           bottom: context.sh(12),
           left: 0,
@@ -956,8 +716,7 @@ class _KalimatView extends StatelessWidget {
               MembacaData.kalimatLatihan.length,
               (i) => AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                margin:
-                    EdgeInsets.symmetric(horizontal: context.sw(3)),
+                margin: EdgeInsets.symmetric(horizontal: context.sw(3)),
                 width: i == state.currentIndex ? 18 : 7,
                 height: 7,
                 decoration: BoxDecoration(

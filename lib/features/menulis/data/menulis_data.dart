@@ -153,16 +153,15 @@ class MenulisData {
   // ─── Huruf A-Z (subset, bisa diperluas) ──────────────────
   static final List<LetterStroke> huruf = [
     LetterStroke(
-      character: 'A',
-      displayLabel: 'A',
+      character: 'A', displayLabel: 'A',
       strokes: [
-        [Offset(0.15, 0.9), Offset(0.5, 0.1), Offset(0.85, 0.9)],
+        [Offset(0.5, 0.1), Offset(0.15, 0.9)],
+        [Offset(0.5, 0.1), Offset(0.85, 0.9)],
         [Offset(0.28, 0.6), Offset(0.72, 0.6)],
       ],
     ),
     LetterStroke(
-      character: 'B',
-      displayLabel: 'B',
+      character: 'B', displayLabel: 'B',
       strokes: [
         [Offset(0.3, 0.1), Offset(0.3, 0.9)],
         [
@@ -176,8 +175,7 @@ class MenulisData {
       ],
     ),
     LetterStroke(
-      character: 'C',
-      displayLabel: 'C',
+      character: 'C', displayLabel: 'C',
       strokes: [
         [
           Offset(0.78, 0.25), Offset(0.62, 0.12), Offset(0.4, 0.1),
@@ -187,26 +185,103 @@ class MenulisData {
       ],
     ),
     LetterStroke(
-      character: 'I',
-      displayLabel: 'I',
+      character: 'D', displayLabel: 'D',
       strokes: [
+        [Offset(0.3, 0.1), Offset(0.3, 0.9)],
+        [
+          Offset(0.3, 0.1), Offset(0.65, 0.12), Offset(0.75, 0.25),
+          Offset(0.75, 0.75), Offset(0.65, 0.88), Offset(0.3, 0.9),
+        ],
+      ],
+    ),
+    LetterStroke(
+      character: 'E', displayLabel: 'E',
+      strokes: [
+        [Offset(0.3, 0.1), Offset(0.3, 0.9)],
         [Offset(0.3, 0.1), Offset(0.7, 0.1)],
-        [Offset(0.5, 0.1), Offset(0.5, 0.9)],
+        [Offset(0.3, 0.5), Offset(0.6, 0.5)],
         [Offset(0.3, 0.9), Offset(0.7, 0.9)],
       ],
     ),
     LetterStroke(
-      character: 'L',
-      displayLabel: 'L',
+      character: 'F', displayLabel: 'F',
+      strokes: [
+        [Offset(0.3, 0.1), Offset(0.3, 0.9)],
+        [Offset(0.3, 0.1), Offset(0.7, 0.1)],
+        [Offset(0.3, 0.5), Offset(0.6, 0.5)],
+      ],
+    ),
+    LetterStroke(
+      character: 'G', displayLabel: 'G',
       strokes: [
         [
-          Offset(0.35, 0.1), Offset(0.35, 0.9), Offset(0.75, 0.9),
+          Offset(0.78, 0.25), Offset(0.62, 0.12), Offset(0.4, 0.1),
+          Offset(0.22, 0.28), Offset(0.18, 0.5), Offset(0.22, 0.72),
+          Offset(0.4, 0.9), Offset(0.62, 0.88), Offset(0.78, 0.75),
+          Offset(0.78, 0.5), Offset(0.5, 0.5),
         ]
       ],
     ),
     LetterStroke(
-      character: 'O',
-      displayLabel: 'O',
+      character: 'H', displayLabel: 'H',
+      strokes: [
+        [Offset(0.25, 0.1), Offset(0.25, 0.9)],
+        [Offset(0.75, 0.1), Offset(0.75, 0.9)],
+        [Offset(0.25, 0.5), Offset(0.75, 0.5)],
+      ],
+    ),
+    LetterStroke(
+      character: 'I', displayLabel: 'I',
+      strokes: [
+        [Offset(0.5, 0.1), Offset(0.5, 0.9)],
+        [Offset(0.3, 0.1), Offset(0.7, 0.1)],
+        [Offset(0.3, 0.9), Offset(0.7, 0.9)],
+      ],
+    ),
+    LetterStroke(
+      character: 'J', displayLabel: 'J',
+      strokes: [
+        [Offset(0.3, 0.1), Offset(0.7, 0.1)],
+        [
+          Offset(0.5, 0.1), Offset(0.5, 0.75), Offset(0.4, 0.9),
+          Offset(0.2, 0.85),
+        ]
+      ],
+    ),
+    LetterStroke(
+      character: 'K', displayLabel: 'K',
+      strokes: [
+        [Offset(0.3, 0.1), Offset(0.3, 0.9)],
+        [Offset(0.7, 0.1), Offset(0.3, 0.5)],
+        [Offset(0.3, 0.5), Offset(0.7, 0.9)],
+      ],
+    ),
+    LetterStroke(
+      character: 'L', displayLabel: 'L',
+      strokes: [
+        [Offset(0.35, 0.1), Offset(0.35, 0.9)],
+        [Offset(0.35, 0.9), Offset(0.75, 0.9)],
+      ],
+    ),
+    LetterStroke(
+      character: 'M', displayLabel: 'M',
+      strokes: [
+        [Offset(0.2, 0.9), Offset(0.2, 0.1)],
+        [Offset(0.2, 0.1), Offset(0.5, 0.5)],
+        [Offset(0.5, 0.5), Offset(0.8, 0.1)],
+        [Offset(0.8, 0.1), Offset(0.8, 0.9)],
+      ],
+    ),
+    LetterStroke(
+      character: 'N', displayLabel: 'N',
+      strokes: [
+        [Offset(0.25, 0.9), Offset(0.25, 0.1)],
+        [Offset(0.25, 0.1), Offset(0.75, 0.9)],
+        [Offset(0.75, 0.9), Offset(0.75, 0.1)],
+      ],
+    ),
+    LetterStroke(
+      character: 'O', displayLabel: 'O',
       strokes: [
         [
           Offset(0.5, 0.1), Offset(0.75, 0.28), Offset(0.82, 0.5),
@@ -216,8 +291,39 @@ class MenulisData {
       ],
     ),
     LetterStroke(
-      character: 'S',
-      displayLabel: 'S',
+      character: 'P', displayLabel: 'P',
+      strokes: [
+        [Offset(0.3, 0.1), Offset(0.3, 0.9)],
+        [
+          Offset(0.3, 0.1), Offset(0.65, 0.12), Offset(0.75, 0.25),
+          Offset(0.75, 0.35), Offset(0.65, 0.48), Offset(0.3, 0.5),
+        ],
+      ],
+    ),
+    LetterStroke(
+      character: 'Q', displayLabel: 'Q',
+      strokes: [
+        [
+          Offset(0.5, 0.1), Offset(0.75, 0.28), Offset(0.82, 0.5),
+          Offset(0.75, 0.72), Offset(0.5, 0.9), Offset(0.25, 0.72),
+          Offset(0.18, 0.5), Offset(0.25, 0.28), Offset(0.5, 0.1),
+        ],
+        [Offset(0.6, 0.6), Offset(0.85, 0.85)],
+      ],
+    ),
+    LetterStroke(
+      character: 'R', displayLabel: 'R',
+      strokes: [
+        [Offset(0.3, 0.1), Offset(0.3, 0.9)],
+        [
+          Offset(0.3, 0.1), Offset(0.65, 0.12), Offset(0.75, 0.25),
+          Offset(0.75, 0.35), Offset(0.65, 0.48), Offset(0.3, 0.5),
+        ],
+        [Offset(0.45, 0.5), Offset(0.75, 0.9)],
+      ],
+    ),
+    LetterStroke(
+      character: 'S', displayLabel: 'S',
       strokes: [
         [
           Offset(0.78, 0.2), Offset(0.6, 0.1), Offset(0.38, 0.12),
@@ -228,22 +334,59 @@ class MenulisData {
       ],
     ),
     LetterStroke(
-      character: 'T',
-      displayLabel: 'T',
+      character: 'T', displayLabel: 'T',
       strokes: [
         [Offset(0.2, 0.1), Offset(0.8, 0.1)],
         [Offset(0.5, 0.1), Offset(0.5, 0.9)],
       ],
     ),
     LetterStroke(
-      character: 'U',
-      displayLabel: 'U',
+      character: 'U', displayLabel: 'U',
       strokes: [
         [
           Offset(0.25, 0.1), Offset(0.25, 0.7), Offset(0.35, 0.85),
           Offset(0.5, 0.9), Offset(0.65, 0.85), Offset(0.75, 0.7),
           Offset(0.75, 0.1),
         ]
+      ],
+    ),
+    LetterStroke(
+      character: 'V', displayLabel: 'V',
+      strokes: [
+        [Offset(0.2, 0.1), Offset(0.5, 0.9)],
+        [Offset(0.5, 0.9), Offset(0.8, 0.1)],
+      ],
+    ),
+    LetterStroke(
+      character: 'W', displayLabel: 'W',
+      strokes: [
+        [Offset(0.15, 0.1), Offset(0.3, 0.9)],
+        [Offset(0.3, 0.9), Offset(0.5, 0.5)],
+        [Offset(0.5, 0.5), Offset(0.7, 0.9)],
+        [Offset(0.7, 0.9), Offset(0.85, 0.1)],
+      ],
+    ),
+    LetterStroke(
+      character: 'X', displayLabel: 'X',
+      strokes: [
+        [Offset(0.2, 0.1), Offset(0.8, 0.9)],
+        [Offset(0.8, 0.1), Offset(0.2, 0.9)],
+      ],
+    ),
+    LetterStroke(
+      character: 'Y', displayLabel: 'Y',
+      strokes: [
+        [Offset(0.2, 0.1), Offset(0.5, 0.5)],
+        [Offset(0.8, 0.1), Offset(0.5, 0.5)],
+        [Offset(0.5, 0.5), Offset(0.5, 0.9)],
+      ],
+    ),
+    LetterStroke(
+      character: 'Z', displayLabel: 'Z',
+      strokes: [
+        [Offset(0.2, 0.1), Offset(0.8, 0.1)],
+        [Offset(0.8, 0.1), Offset(0.2, 0.9)],
+        [Offset(0.2, 0.9), Offset(0.8, 0.9)],
       ],
     ),
   ];

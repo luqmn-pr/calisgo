@@ -84,36 +84,53 @@ class BerhitungNotifier extends StateNotifier<BerhitungState> {
     );
   }
 
-  void moveObjectToBox() {
+  void setObjectsInBox(int count) {
     if (state.phase != BerhitungPhase.answering) return;
-    if (state.objectsOutside > 0) {
-      state = state.copyWith(
-        objectsInBox: state.objectsInBox + 1,
-        objectsOutside: state.objectsOutside - 1,
-      );
+    
+    // Total objects is objectsInBox + objectsOutside when answering. 
+    // We can just calculate the total based on what was spawned initially.
+    final soal = state.currentSoal;
+    int total = 0;
+    switch (soal.type) {
+      case SoalType.pengurangan:
+        total = soal.angkaA;
+        break;
+      case SoalType.penjumlahan:
+      case SoalType.menghitung:
+        total = soal.angkaA + 10; // based on _initSoal logic where outside=10
+        break;
     }
+    // Alternatively, we know the sum is always state.objectsInBox + state.objectsOutside before changing it.
+    final currentTotal = state.objectsInBox + state.objectsOutside;
+    
+    state = state.copyWith(
+      objectsInBox: count,
+      objectsOutside: currentTotal - count,
+    );
   }
 
-  void moveObjectToOutside() {
-    if (state.phase != BerhitungPhase.answering) return;
-    if (state.objectsInBox > 0) {
-      state = state.copyWith(
-        objectsInBox: state.objectsInBox - 1,
-        objectsOutside: state.objectsOutside + 1,
-      );
-    }
-  }
-
-  void checkAnswer() {
+  void checkAnswer() async {
     if (state.phase != BerhitungPhase.answering) return;
 
     final isCorrect = state.objectsInBox == state.currentSoal.jawaban;
-    state = state.copyWith(
-      phase: isCorrect ? BerhitungPhase.correct : BerhitungPhase.incorrect,
-      score: isCorrect ? state.score + 10 : state.score,
-      correctCount:
-          isCorrect ? state.correctCount + 1 : state.correctCount,
-    );
+    
+    if (isCorrect) {
+      state = state.copyWith(
+        phase: BerhitungPhase.correct,
+        score: state.score + 10,
+        correctCount: state.correctCount + 1,
+      );
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (mounted && state.phase == BerhitungPhase.correct) {
+        nextSoal();
+      }
+    } else {
+      state = state.copyWith(phase: BerhitungPhase.incorrect);
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (mounted && state.phase == BerhitungPhase.incorrect) {
+        state = state.copyWith(phase: BerhitungPhase.answering);
+      }
+    }
   }
 
   void nextSoal() {

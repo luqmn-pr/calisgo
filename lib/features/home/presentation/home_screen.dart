@@ -47,21 +47,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── Classroom background ─────────────────────────
-          Image.asset('assets/images/home_bg.png', fit: BoxFit.cover),
-
-          // ── Warm gradient overlay ────────────────────────
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.08),
-                  Colors.black.withOpacity(0.22),
-                ],
+          // ── Wall and Floor Background ─────────────────────────
+          Column(
+            children: [
+              Expanded(
+                flex: 6,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFFFF9C4), Color(0xFFFFE082)], // Warm wall
+                    ),
+                  ),
+                ),
               ),
-            ),
+              Expanded(
+                flex: 4,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFA1887F), Color(0xFF6D4C41)], // Wood floor
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
 
           // ── Bunting flags top ────────────────────────────
@@ -83,14 +96,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                 children: [
                   // Left module cards
                   Expanded(
-                    flex: 5,
+                    flex: 6,
                     child: Padding(
-                      padding: EdgeInsets.only(right: context.sw(20)),
+                      padding: EdgeInsets.only(right: context.sw(10)),
                       child: _buildModuleSection(context),
                     ),
                   ),
 
-                  SizedBox(width: context.sw(12)),
+                  SizedBox(width: context.sw(16)),
 
                   // Right character panel
                   Expanded(flex: 4, child: _buildCharacterPanel(context)),
@@ -284,36 +297,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
-  // ─── Module section (right) ──────────────────────────────────
+  // ─── Module section (left) ──────────────────────────────────
   Widget _buildModuleSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section title
-        Center(
-          child: Text(
-            'Pilih Pelajaran',
-            style: GoogleFonts.nunito(
-              fontSize: context.fs(20),
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 6,
-                  offset: const Offset(2, 2),
-                ),
-              ],
-            ),
-          )
-              .animate(delay: 200.ms)
-              .fadeIn()
-              .slideX(begin: -0.2, end: 0),
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.sw(16),
+        vertical: context.sh(16),
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B3E2D), // Blackboard dark green
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF5D4037), // Wooden border
+          width: 8,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section title
+          Center(
+            child: Text(
+              'Pilih Pelajaran',
+              style: GoogleFonts.nunito(
+                fontSize: context.fs(22),
+                fontWeight: FontWeight.w900,
+                color: Colors.white.withOpacity(0.95),
+              ),
+            )
+                .animate(delay: 200.ms)
+                .fadeIn()
+                .slideX(begin: -0.2, end: 0),
+          ),
 
-        SizedBox(height: context.sh(10)),
+          SizedBox(height: context.sh(12)),
 
-        // Module cards
+          // Module cards
         Expanded(
           child: Column(
             children: [
@@ -377,6 +403,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -486,6 +513,7 @@ class _ModuleCardState extends State<_ModuleCard>
                   : null,
             ),
             child: Stack(
+              alignment: Alignment.center,
               children: [
                 // Shine effect top
                 Positioned(
@@ -521,8 +549,8 @@ class _ModuleCardState extends State<_ModuleCard>
                     children: [
                       // Emoji in circle
                       Container(
-                        width: context.sw(45),
-                        height: context.sw(45),
+                        width: context.sw(75),
+                        height: context.sw(75),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white.withOpacity(0.25),
@@ -530,16 +558,16 @@ class _ModuleCardState extends State<_ModuleCard>
                         child: Center(
                           child: Text(
                             widget.emoji,
-                            style: TextStyle(fontSize: context.sw(26)),
+                            style: TextStyle(fontSize: context.sw(42)),
                           ),
                         ),
                       ),
-                      SizedBox(height: context.sh(8)),
+                      SizedBox(height: context.sh(12)),
                       Text(
                         widget.title,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.nunito(
-                          fontSize: context.fs(14),
+                          fontSize: context.fs(16),
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           shadows: [
@@ -551,47 +579,6 @@ class _ModuleCardState extends State<_ModuleCard>
                           ],
                         ),
                       ),
-                      SizedBox(height: context.sh(4)),
-                      Text(
-                        widget.subtitle,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.nunito(
-                          fontSize: context.fs(9),
-                          color: Colors.white.withOpacity(0.92),
-                          height: 1.3,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (widget.isSpecial) ...[
-                        SizedBox(height: context.sh(6)),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: context.sw(8),
-                            vertical: context.sh(3),
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('🏆',
-                                  style:
-                                      TextStyle(fontSize: context.sw(12))),
-                              SizedBox(width: context.sw(4)),
-                              Text(
-                                'Mode Seru!',
-                                style: GoogleFonts.nunito(
-                                  fontSize: context.fs(9),
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

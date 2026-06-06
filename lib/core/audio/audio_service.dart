@@ -15,6 +15,19 @@ class AudioService {
   bool _bgmEnabled = true;
   bool _bgmPlaying = false;
 
+  AudioService() {
+    _initAudioContext();
+  }
+
+  Future<void> _initAudioContext() async {
+    try {
+      await AudioPlayer.global.setAudioContext(AudioContextConfig(
+        respectSilence: true,
+        focus: AudioContextConfigFocus.mixWithOthers,
+      ).build());
+    } catch (_) {}
+  }
+
   // ── SFX Playback ─────────────────────────────────────────────
 
   /// Mainkan efek suara [type]. Jika tipe = bgm, mulai background music.
@@ -46,6 +59,7 @@ class AudioService {
     if (_bgmPlaying || _isMuted || !_bgmEnabled) return;
 
     try {
+      await _bgmPlayer?.stop();
       _bgmPlayer?.dispose();
       _bgmPlayer = AudioPlayer();
       await _bgmPlayer!.setReleaseMode(ReleaseMode.loop);
@@ -63,7 +77,10 @@ class AudioService {
   Future<void> stopBgm() async {
     _bgmPlaying = false;
     try {
-      await _bgmPlayer?.stop();
+      await _bgmPlayer?.pause();
+      await _bgmPlayer?.release();
+      _bgmPlayer?.dispose();
+      _bgmPlayer = null;
     } catch (_) {}
   }
 
@@ -80,9 +97,8 @@ class AudioService {
     _isMuted = muted;
     try {
       if (muted) {
-        _bgmPlayer?.pause();
-      } else if (_bgmEnabled && _bgmPlaying) {
-        _bgmPlaying = false;
+        stopBgm();
+      } else if (_bgmEnabled) {
         startBgm();
       }
     } catch (_) {}
@@ -96,11 +112,8 @@ class AudioService {
     _bgmEnabled = enabled;
     try {
       if (!enabled) {
-        _bgmPlayer?.pause();
-      } else if (!_isMuted && _bgmPlaying) {
-        _bgmPlaying = false;
-        startBgm();
-      } else if (!_isMuted && !_bgmPlaying) {
+        stopBgm();
+      } else if (!_isMuted) {
         startBgm();
       }
     } catch (_) {}

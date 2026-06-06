@@ -85,9 +85,6 @@ class SettingsDialog extends ConsumerWidget {
                           onChanged: settings.isMuted
                               ? null
                               : (v) => notifier.setVolume(v),
-                          onChangeEnd: (_) {
-                            audioService.playSound(SoundType.pop);
-                          },
                         ),
                       ),
                     ),

@@ -377,13 +377,12 @@ class _TeamHeader extends StatelessWidget {
     return Container(
       height: headerH,
       padding: EdgeInsets.symmetric(horizontal: headerH * 0.3),
-      color: teamColor,
       child: Row(
         children: [
           Text(
             isBlue ? '🔵 Tim Biru' : '🔴 Tim Merah',
             style: TextStyle(
-              color: Colors.white,
+              color: teamColor,
               fontWeight: FontWeight.w900,
               fontSize: fs,
             ),
@@ -393,8 +392,8 @@ class _TeamHeader extends StatelessWidget {
           const Spacer(),
           _Chip(
             label: '${team.questionIndex}/5',
-            bg: Colors.white.withValues(alpha: 0.2),
-            fg: Colors.white,
+            bg: Colors.white,
+            fg: teamColor,
             fs: fs * 0.9,
           ),
           const SizedBox(width: 6),
@@ -429,6 +428,13 @@ class _Chip extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         label,

@@ -70,9 +70,6 @@ class _LandingScreenState extends ConsumerState<LandingScreen>
           // ── 1. Generated background ─────────────────────
           Image.asset('assets/images/landing_bg.png', fit: BoxFit.cover),
 
-          // ── 2. Animated cloud overlay ───────────────────
-          _buildAnimatedClouds(size),
-
           // ── 3. Stars & sparkle decorations ─────────────
           _buildDecorations(size),
 

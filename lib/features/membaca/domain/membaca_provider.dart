@@ -145,6 +145,23 @@ class MembacaNotifier extends StateNotifier<MembacaState> {
     }
   }
 
+  void submitAnswer(bool isCorrect) async {
+    if (isCorrect) {
+      state = state.copyWith(isCorrect: true, score: state.score + 10);
+      await Future.delayed(const Duration(milliseconds: 1500));
+      if (mounted && state.isCorrect) {
+        state = state.copyWith(isCorrect: false);
+        nextKata();
+      }
+    } else {
+      state = state.copyWith(isError: true);
+      await Future.delayed(const Duration(milliseconds: 1000));
+      if (mounted && state.isError) {
+        state = state.copyWith(isError: false);
+      }
+    }
+  }
+
   void removeSukuKata(String suku) {
     // Hapus hanya SATU kemunculan terakhir dari suku ini
     final arranged = List<String>.from(state.arrangedSukuKata);

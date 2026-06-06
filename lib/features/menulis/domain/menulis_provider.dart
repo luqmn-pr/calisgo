@@ -5,9 +5,11 @@ import '../data/menulis_data.dart';
 
 // ─── Enum ─────────────────────────────────────────────────────
 enum TracingPhase { idle, tracing, complete, error }
+enum MenulisCategory { angka, huruf }
 
 // ─── State ────────────────────────────────────────────────────
 class MenulisState {
+  final MenulisCategory category;
   final int currentLetterIndex;
   final int currentStrokeIndex;
   final List<Offset> currentPath;
@@ -19,6 +21,7 @@ class MenulisState {
   final List<LetterStroke> items;
 
   const MenulisState({
+    this.category = MenulisCategory.angka,
     this.currentLetterIndex = 0,
     this.currentStrokeIndex = 0,
     this.currentPath = const [],
@@ -31,6 +34,7 @@ class MenulisState {
   });
 
   MenulisState copyWith({
+    MenulisCategory? category,
     int? currentLetterIndex,
     int? currentStrokeIndex,
     List<Offset>? currentPath,
@@ -42,6 +46,7 @@ class MenulisState {
     List<LetterStroke>? items,
   }) =>
       MenulisState(
+        category: category ?? this.category,
         currentLetterIndex: currentLetterIndex ?? this.currentLetterIndex,
         currentStrokeIndex: currentStrokeIndex ?? this.currentStrokeIndex,
         currentPath: currentPath ?? this.currentPath,
@@ -64,7 +69,16 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
   static const double kMinAccuracy = 0.50; // Minimum 50% match for children
 
   MenulisNotifier()
-      : super(MenulisState(items: MenulisData.allItems));
+      : super(MenulisState(category: MenulisCategory.angka, items: MenulisData.angka));
+
+  void setCategory(MenulisCategory newCategory) {
+    if (state.category == newCategory) return;
+    state = MenulisState(
+      category: newCategory,
+      items: newCategory == MenulisCategory.angka ? MenulisData.angka : MenulisData.huruf,
+      score: state.score,
+    );
+  }
 
   void startStroke(Offset normalized) {
     state = state.copyWith(
@@ -103,6 +117,13 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
           score: state.score + (accuracy * 10).round(),
           feedbackMessage: _getPositiveFeedback(),
         );
+        
+        // Auto-advance after delay
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted && state.phase == TracingPhase.complete) {
+            nextLetter();
+          }
+        });
       } else {
         // Next stroke
         state = state.copyWith(
@@ -120,6 +141,13 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
         phase: TracingPhase.error,
         feedbackMessage: 'Coba lagi ya! Ikuti garis putus-putus 😊',
       );
+      
+      // Auto-dismiss error overlay after a short delay
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted && state.phase == TracingPhase.error) {
+          clearStroke();
+        }
+      });
     }
   }
 
@@ -134,6 +162,7 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
   void nextLetter() {
     final next = (state.currentLetterIndex + 1) % state.items.length;
     state = MenulisState(
+      category: state.category,
       items: state.items,
       currentLetterIndex: next,
       score: state.score,
@@ -145,6 +174,7 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
         (state.currentLetterIndex - 1 + state.items.length) %
             state.items.length;
     state = MenulisState(
+      category: state.category,
       items: state.items,
       currentLetterIndex: prev,
       score: state.score,
@@ -152,7 +182,7 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
   }
 
   void reset() {
-    state = MenulisState(items: state.items, score: state.score);
+    state = MenulisState(category: state.category, items: state.items, score: state.score);
   }
 
   // ─── Algoritma Akurasi ──────────────────────────────────

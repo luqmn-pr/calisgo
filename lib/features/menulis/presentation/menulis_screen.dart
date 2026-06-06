@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/audio/audio_provider.dart';
-
 import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/menulis_provider.dart';
-
 import 'widgets/tracing_canvas.dart';
 
 class MenulisScreen extends ConsumerWidget {
@@ -28,47 +27,139 @@ class MenulisScreen extends ConsumerWidget {
           ),
         ),
         child: SafeArea(
-          child: Row(
+          child: Stack(
             children: [
-              // ─── Left: Controls Panel ──────────────
-              _ControlsPanel(state: state, ref: ref),
+              Column(
+                children: [
+                  // ─── Top Bar ──────────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Back button
+                        GestureDetector(
+                          onTap: () => context.pop(),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.menulisColor,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.menulisColor.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
+                          ),
+                        ),
+                        
+                        // Title
+                        Row(
+                          children: [
+                            const Text('✏️', style: TextStyle(fontSize: 32)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Menulis',
+                              style: GoogleFonts.nunito(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.menulisColor,
+                              ),
+                            ),
+                          ],
+                        ),
 
-              // ─── Center: Tracing Canvas ────────────
-              Expanded(
-                flex: 5,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      // Feedback banner
-                      _FeedbackBanner(state: state),
-                      const SizedBox(height: 12),
-                      // Canvas
-                      Expanded(
-                        child: Container(
+                        // Score
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           decoration: BoxDecoration(
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          child: const TracingCanvas(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('⭐', style: TextStyle(fontSize: 24)),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${state.score}',
+                                style: GoogleFonts.nunito(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.menulisColor,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Stroke progress
-                      _StrokeProgress(state: state),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+
+                  // ─── Main Content Area ─────────────────────────────────────
+                  Expanded(
+                    child: Row(
+                      children: [
+                        // Left Sidebar (Categories & Retry)
+                        _SidebarCategory(state: state, ref: ref),
+
+                        // Center Tracing Canvas
+                        Expanded(
+                          flex: 5,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                            child: Column(
+                              children: [
+                                // Canvas
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(24),
+                                      color: Colors.white,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.08),
+                                          blurRadius: 24,
+                                          offset: const Offset(0, 12),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const ClipRRect(
+                                      borderRadius: BorderRadius.all(Radius.circular(24)),
+                                      child: TracingCanvas(),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                // Stroke Progress
+                                _StrokeProgress(state: state),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // Right Sidebar (Items Selector)
+                        _LetterSelector(state: state, ref: ref),
+                      ],
+                    ),
+                  ),
+                ],
               ),
 
-              // ─── Right: Letter Selector ────────────
-              _LetterSelector(state: state, ref: ref),
+              // ─── Feedback Overlay ───────────────────────────────────────
+              if (state.phase == TracingPhase.complete || state.phase == TracingPhase.error)
+                _FeedbackOverlay(state: state),
             ],
           ),
         ),
@@ -77,227 +168,128 @@ class MenulisScreen extends ConsumerWidget {
   }
 }
 
-// ─── Controls Panel ───────────────────────────────────────────
-class _ControlsPanel extends StatelessWidget {
+// ─── Left Sidebar Category ──────────────────────────────────────────
+class _SidebarCategory extends StatelessWidget {
   final MenulisState state;
   final WidgetRef ref;
-  const _ControlsPanel({required this.state, required this.ref});
+  const _SidebarCategory({required this.state, required this.ref});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
+      width: 100,
+      margin: const EdgeInsets.only(left: 20, bottom: 20),
       decoration: BoxDecoration(
-        color: AppColors.menulisColor,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.menulisColor.withOpacity(0.4),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 16,
-            offset: const Offset(4, 0),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 20),
-                    // Back button
-                    GestureDetector(
-                      onTap: () {
-                        context.pop();
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.arrow_back_ios_new,
-                            color: Colors.white, size: 18),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Kategori Angka
+          _CategoryItem(
+            isActive: state.category == MenulisCategory.angka,
+            text: '1',
+            color: AppColors.primary,
+            onTap: () {
+              ref.read(menulisProvider.notifier).setCategory(MenulisCategory.angka);
+            },
+          ),
+          
+          // Kategori Huruf
+          _CategoryItem(
+            isActive: state.category == MenulisCategory.huruf,
+            text: 'A',
+            color: AppColors.menulisColor,
+            onTap: () {
+              ref.read(menulisProvider.notifier).setCategory(MenulisCategory.huruf);
+            },
+          ),
+          
+          const Divider(thickness: 2, indent: 20, endIndent: 20),
 
-                    Text(
-                      '✏️\nMenulis',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                          ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Score
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        children: [
-                          const Text('⭐', style: TextStyle(fontSize: 24)),
-                          Text(
-                            '${state.score}',
-                            style: TextStyle(
-                              color: AppColors.menulisColor,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 24,
-                            ),
-                          ),
-                          Text(
-                            'Poin',
-                            style: TextStyle(
-                              color: AppColors.textMedium,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Action buttons
-                    _ActionBtn(
-                      icon: Icons.refresh,
-                      label: 'Ulangi',
-                      onTap: () {
-                        ref.read(menulisProvider.notifier).reset();
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    _ActionBtn(
-                      icon: Icons.skip_next,
-                      label: 'Lewati',
-                      onTap: () {
-                        ref.read(menulisProvider.notifier).nextLetter();
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
+          // Ulangi Button
+          GestureDetector(
+            onTap: () => ref.read(menulisProvider.notifier).reset(),
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.amber.shade400,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.amber.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
               ),
+              child: const Icon(Icons.refresh_rounded, color: Colors.white, size: 36),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ActionBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
+class _CategoryItem extends StatelessWidget {
+  final bool isActive;
+  final String text;
+  final Color color;
   final VoidCallback onTap;
-  const _ActionBtn(
-      {required this.icon, required this.label, required this.onTap});
+
+  const _CategoryItem({
+    required this.isActive,
+    required this.text,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: 70,
+        height: 70,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
+          color: isActive ? color : color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  )
+                ]
+              : [],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
+        child: Center(
+          child: Text(
+            text,
+            style: GoogleFonts.nunito(
+              fontSize: 36,
+              fontWeight: FontWeight.w900,
+              color: isActive ? Colors.white : color,
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ─── Feedback Banner ──────────────────────────────────────────
-class _FeedbackBanner extends StatelessWidget {
-  final MenulisState state;
-  const _FeedbackBanner({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.feedbackMessage.isEmpty) {
-      return Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Ikuti garis putus-putus untuk menebalkan '
-          '${state.currentLetter.displayLabel}',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.textMedium,
-              ),
-        ),
-      );
-    }
-
-    final isCorrect = state.phase == TracingPhase.complete ||
-        state.feedbackMessage.contains('✓');
-    // Play sound effect based on tracing feedback
-    if (state.feedbackMessage.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final audio = ProviderScope.containerOf(context).read(audioServiceProvider);
-        if (isCorrect) {
-          audio.playSound(SoundType.correct);
-        } else {
-          audio.playSound(SoundType.incorrect);
-        }
-      });
-    }
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color:
-            (isCorrect ? AppColors.correct : AppColors.incorrect)
-                .withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isCorrect ? AppColors.correct : AppColors.incorrect)
-              .withOpacity(0.4),
-        ),
-      ),
-      child: Text(
-        state.feedbackMessage,
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color:
-                  isCorrect ? AppColors.correct : AppColors.incorrect,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    )
-        .animate(key: ValueKey(state.feedbackMessage))
-        .fadeIn()
-        .scale(begin: const Offset(0.95, 0.95));
-  }
-}
 
 // ─── Stroke Progress ─────────────────────────────────────────
 class _StrokeProgress extends StatelessWidget {
@@ -312,22 +304,26 @@ class _StrokeProgress extends StatelessWidget {
       children: [
         Text(
           'Stroke: ',
-          style: TextStyle(color: AppColors.textMedium, fontSize: 13),
+          style: GoogleFonts.nunito(
+            color: AppColors.textMedium, 
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         ...List.generate(
           totalStrokes,
           (i) => AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: 28,
-            height: 8,
+            width: 36,
+            height: 10,
             decoration: BoxDecoration(
               color: i < state.completedStrokes.length
                   ? AppColors.correct
                   : (i == state.currentStrokeIndex
                       ? AppColors.menulisColor
                       : Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
         ),
@@ -336,7 +332,7 @@ class _StrokeProgress extends StatelessWidget {
   }
 }
 
-// ─── Letter Selector Sidebar ──────────────────────────────────
+// ─── Right Letter Selector ──────────────────────────────────
 class _LetterSelector extends StatelessWidget {
   final MenulisState state;
   final WidgetRef ref;
@@ -346,61 +342,133 @@ class _LetterSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 80,
+      margin: const EdgeInsets.only(right: 20, bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(-4, 0),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        itemCount: state.items.length,
-        itemBuilder: (context, i) {
-          final isActive = i == state.currentLetterIndex;
-          final item = state.items[i];
-          return GestureDetector(
-            onTap: () {
-              if (!isActive) {
-                // Navigate directly to selected letter
-                final notifier = ref.read(menulisProvider.notifier);
-                for (int j = 0; j < (i - state.currentLetterIndex).abs(); j++) {
-                  if (i > state.currentLetterIndex) {
-                    notifier.nextLetter();
-                  } else {
-                    notifier.prevLetter();
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          itemCount: state.items.length,
+          itemBuilder: (context, i) {
+            final isActive = i == state.currentLetterIndex;
+            final item = state.items[i];
+            return GestureDetector(
+              onTap: () {
+                if (!isActive) {
+                  final notifier = ref.read(menulisProvider.notifier);
+                  for (int j = 0; j < (i - state.currentLetterIndex).abs(); j++) {
+                    if (i > state.currentLetterIndex) {
+                      notifier.nextLetter();
+                    } else {
+                      notifier.prevLetter();
+                    }
                   }
                 }
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin:
-                  const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? AppColors.menulisColor
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: Text(
-                  item.displayLabel,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: isActive
-                        ? Colors.white
-                        : AppColors.textMedium,
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? AppColors.menulisColor
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    item.displayLabel,
+                    style: GoogleFonts.nunito(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: isActive
+                          ? Colors.white
+                          : AppColors.textMedium,
+                    ),
                   ),
                 ),
               ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Feedback Overlay ───────────────────────────────────────
+class _FeedbackOverlay extends StatelessWidget {
+  final MenulisState state;
+  const _FeedbackOverlay({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final isCorrect = state.phase == TracingPhase.complete;
+    
+    return Positioned.fill(
+      child: Builder(
+        builder: (context) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final audio = ProviderScope.containerOf(context).read(audioServiceProvider);
+            if (isCorrect) {
+              audio.playSound(SoundType.correct);
+            } else {
+              audio.playSound(SoundType.incorrect);
+            }
+          });
+
+          return GestureDetector(
+            onTap: () {
+              if (!isCorrect) {
+                ProviderScope.containerOf(context).read(menulisProvider.notifier).clearStroke();
+              }
+            },
+            child: Container(
+              color: Colors.black.withOpacity(0.3),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  (isCorrect
+                      ? ColorFiltered(
+                          colorFilter: ColorFilter.mode(AppColors.correct, BlendMode.srcIn),
+                          child: const Text('✔️', style: TextStyle(fontSize: 120)),
+                        )
+                      : const Text('❌', style: TextStyle(fontSize: 120)))
+                    .animate()
+                    .scale(curve: Curves.elasticOut)
+                    .then(delay: !isCorrect ? 0.ms : null)
+                    .shake(hz: !isCorrect ? 4 : 0),
+                const SizedBox(height: 16),
+                Text(
+                  isCorrect ? 'Hebat!' : 'Salah',
+                  style: GoogleFonts.nunito(
+                    fontSize: 48,
+                    color: isCorrect ? AppColors.correct : Colors.red,
+                    fontWeight: FontWeight.w900,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white.withOpacity(0.8),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          );
+          ),
+        ).animate().fadeIn(duration: const Duration(milliseconds: 200));
         },
       ),
     );
