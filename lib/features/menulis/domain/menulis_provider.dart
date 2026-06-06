@@ -140,6 +140,14 @@ class MenulisNotifier extends StateNotifier<MenulisState> {
     );
   }
 
+  void addScoreAndNext() {
+    state = MenulisState(
+      items: state.items,
+      currentLetterIndex: (state.currentLetterIndex + 1) % state.items.length,
+      score: state.score + 10,
+    );
+  }
+
   void prevLetter() {
     final prev =
         (state.currentLetterIndex - 1 + state.items.length) %

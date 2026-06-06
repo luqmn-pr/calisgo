@@ -74,6 +74,7 @@ class MembacaData {
 
   // Kata dengan suku kata untuk latihan menyusun
   static const List<KataModel> kataLatihan = [
+    // 1-10
     KataModel(kata: 'MAMA', sukuKata: ['MA', 'MA'], emoji: '👩'),
     KataModel(kata: 'PAPA', sukuKata: ['PA', 'PA'], emoji: '👨'),
     KataModel(kata: 'BOLA', sukuKata: ['BO', 'LA'], emoji: '⚽'),
@@ -84,8 +85,25 @@ class MembacaData {
     KataModel(kata: 'MEJA', sukuKata: ['ME', 'JA'], emoji: '🪑'),
     KataModel(kata: 'TOPI', sukuKata: ['TO', 'PI'], emoji: '🎩'),
     KataModel(kata: 'ROTI', sukuKata: ['RO', 'TI'], emoji: '🍞'),
+    
+    // 11-20
     KataModel(kata: 'SUSU', sukuKata: ['SU', 'SU'], emoji: '🥛'),
     KataModel(kata: 'KUDA', sukuKata: ['KU', 'DA'], emoji: '🐴'),
+    KataModel(kata: 'BABI', sukuKata: ['BA', 'BI'], emoji: '🐷'),
+    KataModel(kata: 'MADU', sukuKata: ['MA', 'DU'], emoji: '🍯'),
+    KataModel(kata: 'GIGI', sukuKata: ['GI', 'GI'], emoji: '🦷'),
+    KataModel(kata: 'JARI', sukuKata: ['JA', 'RI'], emoji: '🖐️'),
+    KataModel(kata: 'PIPA', sukuKata: ['PI', 'PA'], emoji: '🧪'),
+    KataModel(kata: 'SAPU', sukuKata: ['SA', 'PU'], emoji: '🧹'),
+    KataModel(kata: 'PALU', sukuKata: ['PA', 'LU'], emoji: '🔨'),
+    KataModel(kata: 'BATA', sukuKata: ['BA', 'TA'], emoji: '🧱'),
+
+    // 21-25
+    KataModel(kata: 'RODA', sukuKata: ['RO', 'DA'], emoji: '🛞'),
+    KataModel(kata: 'PITA', sukuKata: ['PI', 'TA'], emoji: '🎀'),
+    KataModel(kata: 'GULA', sukuKata: ['GU', 'LA'], emoji: '🍬'),
+    KataModel(kata: 'SUDU', sukuKata: ['SU', 'DU'], emoji: '🥄'),
+    KataModel(kata: 'RUSA', sukuKata: ['RU', 'SA'], emoji: '🦌'),
   ];
 
   // Kalimat dengan kata terpisah untuk latihan menyusun gaya Duolingo

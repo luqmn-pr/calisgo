@@ -8,6 +8,8 @@ import '../../../core/audio/audio_provider.dart';
 import '../../../core/audio/sound_generator.dart';
 import '../../../core/theme/app_theme.dart';
 import '../domain/menulis_provider.dart';
+import '../../competitive/data/competitive_questions.dart';
+import '../../competitive/presentation/widgets/menulis_challenge_widget.dart';
 
 import 'widgets/tracing_canvas.dart';
 
@@ -56,12 +58,22 @@ class MenulisScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          child: const TracingCanvas(),
+                      child: MenulisChallengeWidget(
+                            challenge: MenulisChallenge(
+                              character: state.currentLetter.character,
+                              displayLabel: state.currentLetter.displayLabel,
+                              keyPoints: state.currentLetter.checkpoints
+                                  .expand((s) => s)
+                                  .toList(),
+                            ),
+                            teamColor: AppColors.menulisColor,
+                            onComplete: () {
+                              ref.read(menulisProvider.notifier).addScoreAndNext();
+                            },
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Stroke progress
-                      _StrokeProgress(state: state),
                     ],
                   ),
                 ),
@@ -240,101 +252,15 @@ class _FeedbackBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.feedbackMessage.isEmpty) {
-      return Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          'Ikuti garis putus-putus untuk menebalkan '
-          '${state.currentLetter.displayLabel}',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.textMedium,
-              ),
-        ),
-      );
-    }
-
-    final isCorrect = state.phase == TracingPhase.complete ||
-        state.feedbackMessage.contains('✓');
-    // Play sound effect based on tracing feedback
-    if (state.feedbackMessage.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final audio = ProviderScope.containerOf(context).read(audioServiceProvider);
-        if (isCorrect) {
-          audio.playSound(SoundType.correct);
-        } else {
-          audio.playSound(SoundType.incorrect);
-        }
-      });
-    }
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color:
-            (isCorrect ? AppColors.correct : AppColors.incorrect)
-                .withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isCorrect ? AppColors.correct : AppColors.incorrect)
-              .withOpacity(0.4),
-        ),
-      ),
-      child: Text(
-        state.feedbackMessage,
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color:
-                  isCorrect ? AppColors.correct : AppColors.incorrect,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    )
-        .animate(key: ValueKey(state.feedbackMessage))
-        .fadeIn()
-        .scale(begin: const Offset(0.95, 0.95));
+    // Kita tidak pakai feedback banner lagi karena MenulisChallengeWidget sudah 
+    // memiliki UI feedback sendiri di dalamnya.
+    return const SizedBox.shrink();
   }
 }
 
-// ─── Stroke Progress ─────────────────────────────────────────
-class _StrokeProgress extends StatelessWidget {
-  final MenulisState state;
-  const _StrokeProgress({required this.state});
 
-  @override
-  Widget build(BuildContext context) {
-    final totalStrokes = state.currentLetter.strokes.length;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Stroke: ',
-          style: TextStyle(color: AppColors.textMedium, fontSize: 13),
-        ),
-        ...List.generate(
-          totalStrokes,
-          (i) => AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: 28,
-            height: 8,
-            decoration: BoxDecoration(
-              color: i < state.completedStrokes.length
-                  ? AppColors.correct
-                  : (i == state.currentStrokeIndex
-                      ? AppColors.menulisColor
-                      : Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+
+
 
 // ─── Letter Selector Sidebar ──────────────────────────────────
 class _LetterSelector extends StatelessWidget {
