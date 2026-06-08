@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/audio/audio_provider.dart';
 import '../../../core/audio/audio_service.dart';
@@ -252,9 +253,7 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
                 phaseIcon: _phaseIcon(t.activePhase),
               ),
 
-              // Feedback Banner
-              if (t.lastFeedback.isNotEmpty)
-                _FeedbackBanner(team: t, teamColor: teamColor, sh: widget.sh),
+
 
               // Challenge
               Expanded(
@@ -307,6 +306,63 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
                 ),
               ),
             ),
+
+          // ── Feedback Overlay ─────────────────────────────────
+          if (t.lastFeedback.isNotEmpty)
+            Positioned.fill(
+              key: ValueKey(t.lastFeedback),
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          (t.lastIsCorrect
+                                  ? ColorFiltered(
+                                      colorFilter: const ColorFilter.mode(Colors.green, BlendMode.srcIn),
+                                      child: Text('✔️', style: TextStyle(fontSize: widget.sh * 0.15)),
+                                    )
+                                  : ColorFiltered(
+                                      colorFilter: const ColorFilter.mode(AppColors.incorrect, BlendMode.srcIn),
+                                      child: Text('❌', style: TextStyle(fontSize: widget.sh * 0.15)),
+                                    ))
+                              .animate(key: ValueKey('icon_${t.lastFeedback}'))
+                              .scale(curve: Curves.elasticOut)
+                              .then(delay: t.lastIsCorrect ? null : 0.ms)
+                              .shake(hz: t.lastIsCorrect ? 0 : 4),
+                          
+                          if (t.lastFeedback.isNotEmpty) ...[
+                            SizedBox(width: widget.sw * 0.02),
+                            Text(
+                              t.lastFeedback,
+                              style: GoogleFonts.nunito(
+                                fontSize: t.lastIsCorrect 
+                                    ? (widget.sh * 0.08).clamp(24.0, 48.0) 
+                                    : (widget.sh * 0.06).clamp(16.0, 32.0),
+                                fontWeight: FontWeight.w900,
+                                color: t.lastIsCorrect ? Colors.greenAccent : AppColors.incorrect,
+                                shadows: [
+                                  const Shadow(
+                                    color: Colors.black54,
+                                    blurRadius: 4,
+                                    offset: Offset(2, 2),
+                                  ),
+                                ],
+                              ),
+                            ).animate(key: ValueKey('text_${t.lastFeedback}')).fadeIn().slideX(begin: 0.3),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ).animate(key: ValueKey('overlay_${t.lastFeedback}')).fadeIn(duration: 150.ms).then(delay: 800.ms).fadeOut(duration: 300.ms),
         ],
       ),
     );
@@ -331,6 +387,9 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
         onComplete: () => widget.isBlue
             ? ref.read(competitiveProvider.notifier).completeBlue()
             : ref.read(competitiveProvider.notifier).completeRed(),
+        onWrong: () => widget.isBlue
+            ? ref.read(competitiveProvider.notifier).wrongBlue()
+            : ref.read(competitiveProvider.notifier).wrongRed(),
       );
     }
 
@@ -344,6 +403,9 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
         onComplete: () => widget.isBlue
             ? ref.read(competitiveProvider.notifier).completeBlue()
             : ref.read(competitiveProvider.notifier).completeRed(),
+        onWrong: () => widget.isBlue
+            ? ref.read(competitiveProvider.notifier).wrongBlue()
+            : ref.read(competitiveProvider.notifier).wrongRed(),
       );
     }
 
@@ -359,6 +421,9 @@ class _TeamPanelState extends ConsumerState<_TeamPanel> {
         onComplete: () => widget.isBlue
             ? ref.read(competitiveProvider.notifier).completeBlue()
             : ref.read(competitiveProvider.notifier).completeRed(),
+        onWrong: () => widget.isBlue
+            ? ref.read(competitiveProvider.notifier).wrongBlue()
+            : ref.read(competitiveProvider.notifier).wrongRed(),
       );
     }
 
@@ -455,43 +520,7 @@ class _Chip extends StatelessWidget {
   }
 }
 
-// ─── Feedback Banner ──────────────────────────────────────────
-class _FeedbackBanner extends StatelessWidget {
-  final TeamState team;
-  final Color teamColor;
-  final double sh;
 
-  const _FeedbackBanner({
-    required this.team,
-    required this.teamColor,
-    required this.sh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isOk = team.lastIsCorrect;
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: sh * 0.008),
-        color: (isOk ? AppColors.correct : AppColors.incorrect).withValues(
-          alpha: 0.18,
-        ),
-        child: Center(
-          child: Text(
-            team.lastFeedback,
-            style: TextStyle(
-              fontSize: (sh * 0.025).clamp(10.0, 14.0),
-              fontWeight: FontWeight.w800,
-              color: isOk ? AppColors.correct : AppColors.incorrect,
-            ),
-          ),
-        ),
-      ),
-    ).animate(key: ValueKey(team.lastFeedback)).fadeIn().slideY(begin: -0.4);
-  }
-}
 
 // ─── Berhitung Panel ──────────────────────────────────────────
 class _BerhitungPanel extends StatefulWidget {
@@ -500,6 +529,7 @@ class _BerhitungPanel extends StatefulWidget {
   final bool isFlipped;
   final int questionIndex;
   final VoidCallback onComplete;
+  final VoidCallback onWrong;
 
   const _BerhitungPanel({
     super.key,
@@ -508,6 +538,7 @@ class _BerhitungPanel extends StatefulWidget {
     required this.isFlipped,
     required this.questionIndex,
     required this.onComplete,
+    required this.onWrong,
   });
 
   @override
@@ -562,6 +593,7 @@ class _BerhitungPanelState extends State<_BerhitungPanel> {
       Future.delayed(const Duration(milliseconds: 600), widget.onComplete);
     } else {
       setState(() => _showWrong = true);
+      widget.onWrong();
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) setState(() => _showWrong = false);
       });
@@ -581,16 +613,10 @@ class _BerhitungPanelState extends State<_BerhitungPanel> {
                 vertical: h * 0.03,
               ),
               decoration: BoxDecoration(
-                color: _showCorrect
-                    ? Colors.green.withValues(alpha: 0.15)
-                    : (_showWrong
-                          ? Colors.red.withValues(alpha: 0.15)
-                          : Colors.white),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _showCorrect
-                      ? Colors.green
-                      : (_showWrong ? Colors.red : Colors.transparent),
+                  color: Colors.transparent,
                   width: 2,
                 ),
                 boxShadow: [
@@ -602,17 +628,11 @@ class _BerhitungPanelState extends State<_BerhitungPanel> {
                 ],
               ),
               child: Text(
-                _showCorrect
-                    ? '✅ Benar!'
-                    : (_showWrong
-                          ? '❌ Salah, hitung lagi!'
-                          : widget.challenge.question),
+                widget.challenge.question,
                 style: TextStyle(
                   fontSize: (h * 0.06).clamp(11.0, 16.0),
                   fontWeight: FontWeight.w800,
-                  color: _showCorrect
-                      ? Colors.green
-                      : (_showWrong ? Colors.red : widget.teamColor),
+                  color: widget.teamColor,
                 ),
                 textAlign: TextAlign.center,
               ),

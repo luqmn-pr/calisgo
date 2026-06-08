@@ -17,6 +17,7 @@ class MembacaChallengeWidget extends StatefulWidget {
   final Color teamColor;
   final bool isFlipped; // tim merah yang di-rotate 180°
   final VoidCallback onComplete;
+  final VoidCallback onWrong;
   final int questionIndex; // untuk ValueKey reset
 
   const MembacaChallengeWidget({
@@ -24,6 +25,7 @@ class MembacaChallengeWidget extends StatefulWidget {
     required this.challenge,
     required this.teamColor,
     required this.onComplete,
+    required this.onWrong,
     this.isFlipped = false,
     this.questionIndex = 0,
   });
@@ -47,7 +49,8 @@ class _MembacaChallengeWidgetState extends State<MembacaChallengeWidget> {
   @override
   void didUpdateWidget(MembacaChallengeWidget old) {
     super.didUpdateWidget(old);
-    if (old.challenge.kata != widget.challenge.kata) {
+    if (old.questionIndex != widget.questionIndex ||
+        old.challenge.kata != widget.challenge.kata) {
       _reset();
     }
   }
@@ -104,6 +107,7 @@ class _MembacaChallengeWidgetState extends State<MembacaChallengeWidget> {
       Future.delayed(const Duration(milliseconds: 400), widget.onComplete);
     } else {
       setState(() => _showWrong = true);
+      widget.onWrong();
       Future.delayed(const Duration(milliseconds: 900), () {
         if (mounted) setState(_reset);
       });
@@ -173,19 +177,7 @@ class _MembacaChallengeWidgetState extends State<MembacaChallengeWidget> {
                 .toList(),
           ),
 
-          // ── Status feedback ───────────────────────────────
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: (_showWrong || _showCorrect) ? 1.0 : 0.0,
-            child: Text(
-              _showCorrect ? '✅ Benar!' : '❌ Coba lagi!',
-              style: TextStyle(
-                fontSize: h * 0.05,
-                fontWeight: FontWeight.w800,
-                color: _showCorrect ? Colors.green : Colors.red,
-              ),
-            ),
-          ),
+
         ],
       );
     });

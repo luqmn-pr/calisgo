@@ -8,7 +8,7 @@ class CalisgoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'ProjectTK — Calistung',
+      title: 'ProjectTK — Calisgo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: AppRouter.router,

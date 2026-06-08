@@ -215,7 +215,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
       activePhase: next,
       questionIndex: 0,
       timeLeft: kTimerSeconds,
-      lastFeedback: '⏰ Waktu Habis!',
+      lastFeedback: _uniqueFeedback('⏰ Waktu Habis!'),
       lastIsCorrect: false,
     );
   }
@@ -223,6 +223,25 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
   // ─── Complete Challenge (selalu dipanggil saat benar) ────────
   void completeBlue() => _completeForTeam(isBlue: true);
   void completeRed() => _completeForTeam(isBlue: false);
+
+  // ─── Wrong Challenge (dipanggil saat salah) ──────────────────
+  void wrongBlue() => _wrongForTeam(isBlue: true);
+  void wrongRed() => _wrongForTeam(isBlue: false);
+
+  void _wrongForTeam({required bool isBlue}) {
+    final team = isBlue ? state.blueTeam : state.redTeam;
+    if (team.activePhase == GamePhase.finished) return;
+
+    final newTeam = team.copyWith(
+      lastFeedback: _uniqueFeedback('Coba lagi!'),
+      lastIsCorrect: false,
+    );
+
+    state = state.copyWith(
+      blueTeam: isBlue ? newTeam : state.blueTeam,
+      redTeam: !isBlue ? newTeam : state.redTeam,
+    );
+  }
 
   void _completeForTeam({required bool isBlue}) {
     final team = isBlue ? state.blueTeam : state.redTeam;
@@ -255,12 +274,11 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
       final phaseBonus = (team.timeLeft / kTimerSeconds * 15).round();
       final nextPhase = _nextPhase(team.activePhase);
 
-      final feedback = phaseBonus > 0
-          ? '✅ Fase Selesai! ⚡ +$phaseBonus bonus!'
-          : '✅ Fase Selesai!';
+      final totalGain = scoreGain + phaseBonus;
+      final feedback = _uniqueFeedback('+$totalGain');
 
       newTeam = team.copyWith(
-        totalScore: team.totalScore + scoreGain + phaseBonus,
+        totalScore: team.totalScore + totalGain,
         activePhase: nextPhase,
         questionIndex: 0,
         timeLeft: nextPhase == GamePhase.finished ? 0 : kTimerSeconds,
@@ -271,9 +289,7 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
         lastIsCorrect: true,
       );
     } else {
-      final feedback = timeBonus > 0
-          ? '🎉 Benar! ⚡ +$timeBonus'
-          : '🎉 Benar!';
+      final feedback = _uniqueFeedback('+$scoreGain');
 
       newTeam = team.copyWith(
         totalScore: team.totalScore + scoreGain,
@@ -343,7 +359,14 @@ class CompetitiveNotifier extends StateNotifier<CompetitiveState> {
   }
 }
 
-// ─── Provider ─────────────────────────────────────────────────
+// ─── Provider State ─────────────────────────────────────────────
+
+int _feedbackCounter = 0;
+String _uniqueFeedback(String base) {
+  _feedbackCounter++;
+  return base + ('\u200B' * (_feedbackCounter % 50));
+}
+
 final competitiveProvider =
     StateNotifierProvider<CompetitiveNotifier, CompetitiveState>((ref) {
   return CompetitiveNotifier();

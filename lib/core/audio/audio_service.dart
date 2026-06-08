@@ -65,11 +65,18 @@ class AudioService {
       await _bgmPlayer!.setReleaseMode(ReleaseMode.loop);
       await _bgmPlayer!.setVolume(_volume * 0.3);
 
-      final bytes = SoundGenerator.getSound(SoundType.bgm);
-      await _bgmPlayer!.play(BytesSource(bytes));
-      _bgmPlaying = true;
+      try {
+        // Coba mainkan file mp3 custom dari assets terlebih dahulu
+        await _bgmPlayer!.play(AssetSource('audio/backsound.mp3'));
+        _bgmPlaying = true;
+      } catch (e) {
+        // Jika file tidak ada, gunakan backsound bawaan (sintetis)
+        final bytes = SoundGenerator.getSound(SoundType.bgm);
+        await _bgmPlayer!.play(BytesSource(bytes));
+        _bgmPlaying = true;
+      }
     } catch (_) {
-      // Abaikan — bisa jadi platform tidak support BytesSource
+      // Abaikan — bisa jadi platform tidak support
     }
   }
 

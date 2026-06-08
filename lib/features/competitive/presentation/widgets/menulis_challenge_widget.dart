@@ -16,6 +16,7 @@ class MenulisChallengeWidget extends StatefulWidget {
   final MenulisChallenge challenge;
   final Color teamColor;
   final VoidCallback onComplete;
+  final VoidCallback onWrong;
   final int questionIndex;
 
   const MenulisChallengeWidget({
@@ -23,6 +24,7 @@ class MenulisChallengeWidget extends StatefulWidget {
     required this.challenge,
     required this.teamColor,
     required this.onComplete,
+    required this.onWrong,
     this.questionIndex = 0,
   });
 
@@ -75,6 +77,7 @@ class _MenulisChallengeWidgetState extends State<MenulisChallengeWidget> {
     if (allHit) {
       Future.delayed(const Duration(milliseconds: 700), widget.onComplete);
     } else {
+      widget.onWrong();
       Future.delayed(const Duration(milliseconds: 700), () {
         if (mounted) {
           setState(() {
@@ -178,31 +181,7 @@ class _MenulisChallengeWidgetState extends State<MenulisChallengeWidget> {
 
           SizedBox(height: h * 0.02),
 
-          // ── Status ───────────────────────────────────────
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: _result == null
-                ? Text(
-                    _isDrawing ? '✏️ Terus gambar...' : '👆 Mulai dari titik 1',
-                    key: const ValueKey('idle'),
-                    style: TextStyle(
-                      fontSize: h * 0.04,
-                      color: widget.teamColor.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
-                : Text(
-                    _result! ? '✅ Bagus sekali!' : '❌ Coba lagi!',
-                    key: ValueKey(_result),
-                    style: TextStyle(
-                      fontSize: h * 0.045,
-                      color: _result! ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  )
-                        .animate()
-                        .scale(curve: Curves.elasticOut),
-          ),
+
         ],
       );
     });

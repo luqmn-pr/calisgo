@@ -224,10 +224,8 @@ class _LandingScreenState extends ConsumerState<LandingScreen>
       ('L', Color(0xFFFDD835)),
       ('I', Color(0xFF66BB6A)),
       ('S', Color(0xFF29B6F6)),
-      ('T', Color(0xFF7E57C2)),
-      ('U', Color(0xFFEC407A)),
-      ('N', Color(0xFFFF7043)),
-      ('G', Color(0xFF26C6DA)),
+      ('G', Color(0xFF7E57C2)),
+      ('O', Color(0xFFEC407A)),
     ];
     final fs = context.fs(48);
 
@@ -403,7 +401,7 @@ class _LandingScreenState extends ConsumerState<LandingScreen>
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   backgroundColor: const Color(0xFFFFF8E1),
                   title: Text('👋 Keluar?', style: GoogleFonts.nunito(fontWeight: FontWeight.w900, fontSize: 22)),
-                  content: Text('Yakin ingin keluar dari Calistung?', style: GoogleFonts.nunito(fontWeight: FontWeight.w600, fontSize: 16)),
+                  content: Text('Yakin ingin keluar dari Calisgo?', style: GoogleFonts.nunito(fontWeight: FontWeight.w600, fontSize: 16)),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),

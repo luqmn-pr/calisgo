@@ -214,10 +214,8 @@ class _SplashScreenState extends State<SplashScreen>
       ('L', Color(0xFFFFEB3B)),
       ('I', Color(0xFF66BB6A)),
       ('S', Color(0xFF40C4FF)),
-      ('T', Color(0xFF7E57C2)),
-      ('U', Color(0xFFEC407A)),
-      ('N', Color(0xFFFF7043)),
-      ('G', Color(0xFF26C6DA)),
+      ('G', Color(0xFF7E57C2)),
+      ('O', Color(0xFFEC407A)),
     ];
     final fs = context.fs(52);
 

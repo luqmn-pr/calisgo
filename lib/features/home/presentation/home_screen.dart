@@ -260,19 +260,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
         alignment: Alignment.bottomCenter,
         children: [
           // Boy Character
-          Container(
-            padding: EdgeInsets.only(top: context.sh(40)),
+          Positioned(
+            bottom: context.sh(-140),
+            right: context.sw(-100),
             child: Image.asset(
               'assets/images/char_boy.png',
-              height: context.sh(320),
+              height: context.sh(550),
               fit: BoxFit.contain,
             ).animate(delay: 200.ms).fadeIn().slideX(begin: 0.5, end: 0),
           ),
           
           // Speech Bubble
           Positioned(
-            top: context.sh(30),
-            left: 0,
+            top: context.sh(110),
+            right: context.sw(250),
             child: Container(
               padding: EdgeInsets.symmetric(
                 horizontal: context.sw(12),
@@ -630,65 +631,121 @@ class _ModuleCardState extends ConsumerState<_ModuleCard>
 
     showDialog(
       context: context,
+      barrierColor: Colors.black54,
       builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            'Nama Tim',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.nunito(fontWeight: FontWeight.w900),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: blueCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Tim Kiri (Biru)',
-                  labelStyle: TextStyle(color: AppColors.teamBlue),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.person, color: AppColors.teamBlue),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: redCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Tim Kanan (Merah)',
-                  labelStyle: TextStyle(color: AppColors.teamRed),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.person, color: AppColors.teamRed),
-                ),
-              ),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.competitiveColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              onPressed: () {
-                Navigator.pop(ctx);
-                ref.read(competitiveProvider.notifier).setTeamNames(
-                      blueCtrl.text.isEmpty ? 'Tim Biru' : blueCtrl.text,
-                      redCtrl.text.isEmpty ? 'Tim Merah' : redCtrl.text,
-                    );
-                context.push(widget.route);
-              },
-              child: Text(
-                'Mulai Pertarungan!',
-                style: GoogleFonts.nunito(
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: AppColors.background,
+          child: SingleChildScrollView(
+            child: Container(
+              width: context.sw(340),
+            padding: EdgeInsets.symmetric(
+              horizontal: context.sw(24),
+              vertical: context.sh(20),
             ),
-          ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Title ──────────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('⚔️', style: TextStyle(fontSize: context.fs(26))),
+                    SizedBox(width: context.sw(8)),
+                    Text(
+                      'Nama Tim',
+                      style: GoogleFonts.nunito(
+                        fontSize: context.fs(22),
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: context.sh(18)),
+                
+                // ── Fields ─────────────────────────────────
+                _buildTeamField(context, blueCtrl, 'Tim Kiri (Biru)', AppColors.teamBlue, Icons.person),
+                SizedBox(height: context.sh(12)),
+                _buildTeamField(context, redCtrl, 'Tim Kanan (Merah)', AppColors.teamRed, Icons.person),
+                SizedBox(height: context.sh(24)),
+
+                // ── Play Button ────────────────────────────
+                SizedBox(
+                  width: context.sw(200),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ref.read(competitiveProvider.notifier).setTeamNames(
+                            blueCtrl.text.isEmpty ? 'Tim Biru' : blueCtrl.text,
+                            redCtrl.text.isEmpty ? 'Tim Merah' : redCtrl.text,
+                          );
+                      context.push(widget.route);
+                    },
+                    icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                    label: Text(
+                      'Mulai!',
+                      style: GoogleFonts.nunito(
+                        fontWeight: FontWeight.w800,
+                        fontSize: context.fs(16),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.competitiveColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: context.sh(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                      shadowColor: AppColors.competitiveColor.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildTeamField(BuildContext context, TextEditingController ctrl, String label, Color color, IconData icon) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.sw(14),
+        vertical: context.sh(4),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: color.withOpacity(0.3), width: 2),
+      ),
+      child: TextField(
+        controller: ctrl,
+        style: GoogleFonts.nunito(
+          fontSize: context.fs(16),
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.nunito(
+            color: color.withOpacity(0.7),
+            fontWeight: FontWeight.w700,
+          ),
+          border: InputBorder.none,
+          icon: Icon(icon, color: color),
+        ),
+      ),
     );
   }
 }
